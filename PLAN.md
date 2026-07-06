@@ -27,7 +27,7 @@ Task details (full code, tests, commands) live in
 The loop MUST NOT invent tasks beyond the plan.
 
 ### Phase 1 — Pure core (TDD)
-- [ ] Task 1: 2D vector math
+- [x] Task 1: 2D vector math
 - [ ] Task 2: Seeded PRNG
 - [ ] Task 3: Gameplay constants
 - [ ] Task 4: Gravity (k-nearest, inverse-square)
