@@ -22,10 +22,39 @@ green, checks the box, and appends one line to `AUTOPILOT_LOG.md`.
 - [x] **Phase 0 — Scaffold** (bootstrap, gate green on skeleton, docs, spec — 2026-07-06)
 
 ## Backlog
-Phases 1+ are populated from the approved implementation plan
-(`docs/superpowers/plans/`, produced by writing-plans — next step after Nico's spec
-review). The loop MUST NOT invent tasks beyond the spec; if this section is empty,
-there is nothing to build yet — exit.
+Task details (full code, tests, commands) live in
+`docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` — that text is binding.
+The loop MUST NOT invent tasks beyond the plan.
+
+### Phase 1 — Pure core (TDD)
+- [ ] Task 1: 2D vector math
+- [ ] Task 2: Seeded PRNG
+- [ ] Task 3: Gameplay constants
+- [ ] Task 4: Gravity (k-nearest, inverse-square)
+- [ ] Task 5: Semi-implicit Euler integrator
+- [ ] Task 6: World types
+- [ ] Task 7: Orbit mechanics + capture
+- [ ] Task 8: Trajectory preview (same integrator as flight)
+- [ ] Task 9: Seeded endless world generator
+- [ ] Task 10: Scoring (distance, crystals, flyby multiplier)
+- [ ] Task 11: Game phase machine
+- [ ] Task 12: Sim tick (orbit, flight, capture, hazards, fuel)
+- [ ] Task 13: Fixed-timestep accumulator
+- [ ] Task 14: Guarded storage + pure aim mapping
+
+### Phase 2 — Rendering, input, UI, audio
+- [ ] Task 15: Scene rig (renderer, camera, starfield, bloom)
+- [ ] Task 16: Entity mesh pools
+- [ ] Task 17: Trajectory preview line + pointer controls
+- [ ] Task 18: HUD, screens, styling (German UI)
+- [ ] Task 19: Game bootstrap (main.ts wiring)
+- [ ] Task 20: Audio synth + trail + bursts
+- [ ] Task 21: Dev FPS overlay + performance pass
+- [ ] Task 22: GitHub Pages deploy workflow
+- [ ] Task 23: Documentation sync + final verification
+
+### Needs Nico live verify (accumulates during Phase 2)
+(visual/game-feel checks that need a real display + GPU — appended as tasks complete)
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it
