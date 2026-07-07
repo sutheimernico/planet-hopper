@@ -31,7 +31,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 2: Seeded PRNG
 - [x] Task 3: Gameplay constants
 - [x] Task 4: Gravity (k-nearest, inverse-square)
-- [ ] Task 5: Semi-implicit Euler integrator
+- [x] Task 5: Semi-implicit Euler integrator
 - [ ] Task 6: World types
 - [ ] Task 7: Orbit mechanics + capture
 - [ ] Task 8: Trajectory preview (same integrator as flight)
