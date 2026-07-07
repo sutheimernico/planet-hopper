@@ -30,4 +30,10 @@ describe('accelerationAt', () => {
     // the huge far body is excluded by k=3, so pull is NOT dominated by -y
     expect(a.y).toBeGreaterThan(-1)
   })
+  it('returns zero acceleration exactly at a body position (no NaN)', () => {
+    expect(accelerationAt(vec(10, 0), [body(10, 0)], 100, 3)).toEqual({ x: 0, y: 0 })
+  })
+  it('returns zero acceleration with no bodies', () => {
+    expect(accelerationAt(vec(0, 0), [], 100, 3)).toEqual({ x: 0, y: 0 })
+  })
 })
