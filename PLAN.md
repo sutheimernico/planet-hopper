@@ -34,7 +34,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 5: Semi-implicit Euler integrator
 - [x] Task 6: World types
 - [x] Task 7: Orbit mechanics + capture
-- [ ] Task 8: Trajectory preview (same integrator as flight)
+- [x] Task 8: Trajectory preview (same integrator as flight)
 - [ ] Task 9: Seeded endless world generator
 - [ ] Task 10: Scoring (distance, crystals, flyby multiplier)
 - [ ] Task 11: Game phase machine
