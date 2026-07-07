@@ -1862,6 +1862,9 @@ export interface EntityPools {
   sync(world: WorldSnapshot): void
   updateShip(pos: Vec, velAngle: number): void
   shipPosition(): Vec
+  // restart creates a fresh world whose ids restart at 1 — stale pooled meshes
+  // would silently be reused at old positions without this (review finding, Task 9)
+  reset(): void
 }
 
 export function createEntityPools(scene: THREE.Scene): EntityPools {
@@ -1951,6 +1954,12 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
       ship.rotation.z = velAngle - Math.PI / 2 // cone points +y by default
     },
     shipPosition: () => ({ x: ship.position.x, y: ship.position.y }),
+    reset() {
+      for (const [, obj] of [...planetObjs, ...crystalObjs, ...sunObjs]) scene.remove(obj)
+      planetObjs.clear()
+      crystalObjs.clear()
+      sunObjs.clear()
+    },
   }
 }
 
@@ -2339,6 +2348,7 @@ function boot(root: HTMLDivElement): void {
     onRestart: () => {
       world = createWorld(Date.now() % 2 ** 31)
       world.ensureUntil(C.GENERATE_AHEAD)
+      pools.reset() // new world reuses ids — drop stale meshes (review finding, Task 9)
       run = newRun(world.snapshot())
       prevShipPos = run.ship.pos
       setPhase('restart')
