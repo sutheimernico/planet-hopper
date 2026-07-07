@@ -37,4 +37,11 @@ describe('orbit', () => {
     expect(o.dir).toBe(1) // counter-clockwise
     expect(o.planetId).toBe(1)
   })
+  it('enterOrbit picks clockwise dir for opposite tangential motion', () => {
+    const o = enterOrbit(planet, vec(120, 50), vec(0, -10)) // ship right of planet, moving down
+    expect(o.dir).toBe(-1)
+  })
+  it('launchVelocity returns zero velocity for a zero aim direction', () => {
+    expect(launchVelocity(vec(0, 0), 1)).toEqual({ x: 0, y: 0 })
+  })
 })
