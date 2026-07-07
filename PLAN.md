@@ -28,7 +28,7 @@ The loop MUST NOT invent tasks beyond the plan.
 
 ### Phase 1 — Pure core (TDD)
 - [x] Task 1: 2D vector math
-- [ ] Task 2: Seeded PRNG
+- [x] Task 2: Seeded PRNG
 - [ ] Task 3: Gameplay constants
 - [ ] Task 4: Gravity (k-nearest, inverse-square)
 - [ ] Task 5: Semi-implicit Euler integrator
