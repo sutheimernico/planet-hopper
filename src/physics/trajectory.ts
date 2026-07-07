@@ -1,7 +1,7 @@
 import { DT, GRAVITY, K_NEAREST } from '../core/constants'
 import { dist, type Vec } from '../core/vec'
 import type { WorldSnapshot } from '../world/types'
-import { findCapture } from './capture'
+import { captureRadius, findCapture } from './capture'
 import { accelerationAt, type GravityBody } from './gravity'
 import { stepSemiImplicit, type Kinematic } from './integrator'
 
@@ -21,6 +21,8 @@ export function simulateTrajectory(
   sampleEvery: number,
 ): TrajectoryResult {
   const bodies: GravityBody[] = [...world.planets, ...world.suns]
+  const launchPlanet =
+    ignorePlanetId !== null ? (world.planets.find((p) => p.id === ignorePlanetId) ?? null) : null
   let k = start
   let ignore = ignorePlanetId
   const points: Vec[] = []
@@ -30,9 +32,11 @@ export function simulateTrajectory(
     if (i % sampleEvery === 0) points.push(k.pos)
 
     // once clear of the launch planet's capture zone, it becomes capturable again
-    if (ignore !== null) {
-      const launchPlanet = world.planets.find((p) => p.id === ignore)
-      if (!launchPlanet || findCapture(k.pos, [launchPlanet], null) === null) ignore = null
+    if (
+      ignore !== null &&
+      (!launchPlanet || dist(k.pos, launchPlanet.pos) > captureRadius(launchPlanet))
+    ) {
+      ignore = null
     }
     for (const s of world.suns) {
       if (dist(k.pos, s.pos) <= s.radius) return { points, outcome: 'sun', capturedBy: null }

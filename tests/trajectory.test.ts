@@ -39,6 +39,12 @@ describe('simulateTrajectory', () => {
     expect(t.outcome).toBe('captured')
     expect(t.capturedBy).toBe(2)
   })
+  it('reports sun burn-up and stops there', () => {
+    const w: WorldSnapshot = { ...world, suns: [{ id: 9, pos: vec(40, 11), radius: 6, mass: 80 }] }
+    const t = simulateTrajectory({ pos: vec(20, 10), vel: vec(50, 0) }, w, 1, 2000, 1)
+    expect(t.outcome).toBe('sun')
+    expect(t.capturedBy).toBeNull()
+  })
   it('samples every nth point', () => {
     const full = simulateTrajectory({ pos: vec(0, 12), vel: vec(30, 5) }, world, 1, 40, 1)
     const sampled = simulateTrajectory({ pos: vec(0, 12), vel: vec(30, 5) }, world, 1, 40, 4)
