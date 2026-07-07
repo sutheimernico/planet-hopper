@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { add, cross, dist, len, norm, scale, sub, vec } from '../src/core/vec'
+import { add, cross, dist, len, lenSq, norm, scale, sub, vec } from '../src/core/vec'
 
 describe('vec', () => {
   it('adds, subtracts, scales', () => {
@@ -10,6 +10,7 @@ describe('vec', () => {
   it('length and distance', () => {
     expect(len(vec(3, 4))).toBe(5)
     expect(dist(vec(1, 1), vec(4, 5))).toBe(5)
+    expect(lenSq(vec(3, 4))).toBe(25)
   })
   it('normalizes, zero-safe', () => {
     expect(norm(vec(10, 0))).toEqual({ x: 1, y: 0 })
