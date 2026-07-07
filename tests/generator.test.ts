@@ -43,6 +43,13 @@ describe('createWorld', () => {
     const eighthX = planets[7]!.pos.x
     for (const s of suns) expect(s.pos.x).toBeGreaterThan(eighthX)
   })
+  it('assigns globally unique ids across planets, crystals, and suns', () => {
+    const w = createWorld(11)
+    w.ensureUntil(2000)
+    const { planets, crystals, suns } = w.snapshot()
+    const ids = [...planets, ...crystals, ...suns].map((e) => e.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
   it('prune drops entities behind x, keeps the rest', () => {
     const w = createWorld(9)
     w.ensureUntil(2000)
