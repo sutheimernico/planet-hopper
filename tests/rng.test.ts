@@ -30,4 +30,9 @@ describe('mulberry32', () => {
     expect(hashSeed(42, 1)).toBe(hashSeed(42, 1))
     expect(hashSeed(42, 1)).not.toBe(hashSeed(42, 2))
   })
+  it('pins the exact first draw for seed 42 (golden value)', () => {
+    const value = mulberry32(42)()
+    expect(value).toBe(mulberry32(42)()) // determinism sanity
+    expect(value).toMatchInlineSnapshot(`0.6011037519201636`)
+  })
 })
