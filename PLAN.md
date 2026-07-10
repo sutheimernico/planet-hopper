@@ -39,7 +39,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 10: Scoring (distance, crystals, flyby multiplier)
 - [x] Task 11: Game phase machine
 - [x] Task 12: Sim tick (orbit, flight, capture, hazards, fuel)
-- [ ] Task 13: Fixed-timestep accumulator
+- [x] Task 13: Fixed-timestep accumulator
 - [ ] Task 14: Guarded storage + pure aim mapping
 
 ### Phase 2 — Rendering, input, UI, audio
