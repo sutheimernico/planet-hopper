@@ -15,6 +15,10 @@ export const initialScore = (): ScoreState => ({
   points: 0, crystals: 0, mult: 1, multTimer: 0, maxX: 0,
 })
 
+/**
+ * Advance scoring by one sim tick. Caller convention: `shipX` is the ship's
+ * post-integration x for this tick; `dt >= 0` is a precondition (not clamped).
+ */
 export function tickScore(s: ScoreState, shipX: number, dt: number): ScoreState {
   const maxX = Math.max(s.maxX, shipX)
   const points = s.points + (maxX - s.maxX) * DIST_POINTS_PER_WU * s.mult

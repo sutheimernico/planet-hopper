@@ -1,7 +1,6 @@
-// tests/score.test.ts
 import { describe, expect, it } from 'vitest'
 import {
-  CRYSTAL_POINTS, FLYBY_POINTS, MULT_DECAY_SECONDS, MULT_MAX, MULT_STEP,
+  CRYSTAL_POINTS, DIST_POINTS_PER_WU, FLYBY_POINTS, MULT_DECAY_SECONDS, MULT_MAX, MULT_STEP,
 } from '../src/core/constants'
 import { initialScore, onCrystal, onFlyby, tickScore } from '../src/core/score'
 
@@ -13,6 +12,12 @@ describe('score', () => {
     s = tickScore(s, 50, 1 / 120) // flying backwards adds nothing
     expect(s.points).toBe(after)
     expect(s.maxX).toBe(100)
+  })
+  it('distance points scale with the active multiplier', () => {
+    let s = onFlyby(initialScore()) // mult = 1 + MULT_STEP, decay timer running
+    const before = s.points
+    s = tickScore(s, 100, 1 / 120)
+    expect(s.points).toBe(before + 100 * DIST_POINTS_PER_WU * (1 + MULT_STEP))
   })
   it('crystal adds points times multiplier', () => {
     let s = { ...initialScore(), mult: 2 }
