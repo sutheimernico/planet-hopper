@@ -37,7 +37,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 8: Trajectory preview (same integrator as flight)
 - [x] Task 9: Seeded endless world generator
 - [x] Task 10: Scoring (distance, crystals, flyby multiplier)
-- [ ] Task 11: Game phase machine
+- [x] Task 11: Game phase machine
 - [ ] Task 12: Sim tick (orbit, flight, capture, hazards, fuel)
 - [ ] Task 13: Fixed-timestep accumulator
 - [ ] Task 14: Guarded storage + pure aim mapping
