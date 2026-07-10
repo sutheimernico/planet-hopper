@@ -108,6 +108,28 @@ describe('sim', () => {
     }
     s = run(s, w, 1.2)
     expect(s.score.mult).toBeGreaterThan(1)
-    expect(s.events.length >= 0).toBe(true) // events drained per tick; flyby already consumed
+    expect(s.events).toEqual([]) // events drained per tick; flyby already consumed
+  })
+  it('crystal refuel caps at FUEL_MAX', () => {
+    const crystal = { id: 99, pos: vec(25, 0), collected: false }
+    const w: WorldSnapshot = { ...twoPlanets(), crystals: [crystal] }
+    let s: RunState = {
+      ...newRun(w),
+      mode: 'flying',
+      orbit: null,
+      fuel: FUEL_MAX - 1,
+      ship: { pos: vec(22, 0), vel: vec(30, 0) },
+    }
+    s = tickRun(s, w, DT)
+    expect(crystal.collected).toBe(true)
+    expect(s.fuel).toBe(FUEL_MAX)
+  })
+  it('tickRun on a dead run is a no-op with drained events', () => {
+    const w = twoPlanets()
+    let s: RunState = { ...newRun(w), fuel: 0 }
+    s = run(s, w, STRANDED_GRACE + 0.5)
+    expect(s.mode).toBe('dead')
+    const after = tickRun(s, w, DT)
+    expect(after).toEqual({ ...s, events: [] })
   })
 })

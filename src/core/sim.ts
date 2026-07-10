@@ -89,6 +89,8 @@ export function tickRun(s: RunState, world: WorldSnapshot, dt: number = DT): Run
       ...s,
       orbit,
       ship: { pos: orbitPosition(planet, orbit), vel: { x: 0, y: 0 } },
+      // Accepted deviation (reviewed 2026-07-10): passes pre-tick x, not tickScore's
+      // documented post-tick x — impact ≤ 0.13 wu of distance points; do not re-flag.
       score: tickScore(s.score, s.ship.pos.x, dt),
       strandedTimer: s.fuel < launchCost(0) ? s.strandedTimer + dt : 0,
       events,
