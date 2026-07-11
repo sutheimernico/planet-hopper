@@ -45,7 +45,7 @@ The loop MUST NOT invent tasks beyond the plan.
 ### Phase 2 — Rendering, input, UI, audio
 - [x] Task 15: Scene rig (renderer, camera, starfield, bloom)
 - [x] Task 16: Entity mesh pools
-- [ ] Task 17: Trajectory preview line + pointer controls
+- [x] Task 17: Trajectory preview line + pointer controls
 - [ ] Task 18: HUD, screens, styling (German UI)
 - [ ] Task 19: Game bootstrap (main.ts wiring)
 - [ ] Task 20: Audio synth + trail + bursts
