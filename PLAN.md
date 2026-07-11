@@ -82,3 +82,6 @@ The loop MUST NOT invent tasks beyond the plan.
 - Git remote / public-visibility decision before any first push.
 - Game-feel + visual sign-off on a real GPU/display; fps verification on a real laptop.
 - Name confirmation ("Planet Hopper" is the working title).
+- Pre-go-live check of `.github/workflows/deploy.yml` action pins: checkout/setup-node already
+  bumped to Node24-ready majors (v5/v6, 2026-07-11); `upload-pages-artifact@v3`/`deploy-pages@v4`
+  had no newer major then — re-verify if the remote is created after Sept 2026 (Node20 runtime EOL).
