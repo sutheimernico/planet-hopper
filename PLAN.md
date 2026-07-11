@@ -51,7 +51,16 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 20: Audio synth + trail + bursts
 - [x] Task 21: Dev FPS overlay + performance pass
 - [x] Task 22: GitHub Pages deploy workflow
-- [ ] Task 23: Documentation sync + final verification
+- [x] Task 23: Documentation sync + final verification
+
+### Deferred polish (v1.1 candidates)
+Consciously deferred out of v1 so it converges (spec nice-to-haves, from
+`docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` "Deferred polish"); each
+is a small standalone iteration.
+- [ ] Nebula gradient backdrop layers (spec §6) — starfield + fog ship first.
+- [ ] Slight time-dilation on flyby bonus (spec §6 juice).
+- [ ] Ambient synth pad (spec §7) — SFX ship first; pad needs volume balancing on
+      real speakers.
 
 ### Needs Nico live verify (accumulates during Phase 2)
 (visual/game-feel checks that need a real display + GPU — appended as tasks complete)

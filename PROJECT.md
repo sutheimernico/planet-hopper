@@ -51,9 +51,13 @@ No UI framework — DOM overlay only. No runtime network access.
 
 ## Status
 <!-- keep current — the sweep and every fresh agent reads this first -->
-- 2026-07-06: Project bootstrapped (scaffold + gate + docs). Design spec written,
-  awaiting Nico's spec review; implementation plan (writing-plans) is the next step.
-  No game code yet.
+- 2026-07-11: v1 code-complete on `autopilot/work` (Tasks 1–23 done): full arcade
+  loop wired end to end (aim → launch → capture/crash → score → restart), 79 tests
+  green, gate clean (typecheck + tests + lint), production build clean (145 kB
+  gzip). Verified so far via automated gate/build/headless smoke only — no real
+  browser/GPU session yet. Needs Nico: live game-feel/fps verify on a real
+  integrated-GPU display, git remote + public-visibility decision, name
+  confirmation ("Planet Hopper" is the working title).
 
 ## Roadmap
 Indicative (the implementation plan refines this): Phase 0 scaffold ✓ → Phase 1 physics

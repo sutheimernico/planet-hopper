@@ -6,8 +6,11 @@ showpiece: custom gravity physics, deterministic world generation, 60 fps on
 integrated GPUs, no backend, no install.
 
 ## Status
-Bootstrapped 2026-07-06. Design spec done (`docs/superpowers/specs/`), implementation
-not started. Not playable yet.
+v1 code-complete on `autopilot/work` (2026-07-11): full arcade loop wired end to
+end (aim → launch → capture/crash → score → restart), 79 tests green, gate clean,
+production build clean (145 kB gzip). Verified so far via automated gate/build/
+headless smoke only — no real browser/GPU session yet. Needs Nico: live game-feel/
+fps verify, git remote + public-visibility decision, name confirmation.
 
 ## Honest framing
 - Everything is rendered live in the browser; no prerendered footage or assets.
@@ -26,6 +29,8 @@ highscore. No online features.
 npm install
 npm run dev        # Vite dev server
 npm run gate       # typecheck + tests + lint (the objective done-check)
+npm run build      # production build
+npm run preview    # serve the production build locally
 ```
 
 ## Stack
