@@ -1,5 +1,16 @@
-// Entry point. Real bootstrap (renderer, loop, state machine) lands with Phase 1.
+// src/main.ts
+import { createSceneRig } from './render/scene'
+
 const app = document.querySelector<HTMLDivElement>('#app')
 if (app) {
-  app.textContent = 'Planet Hopper — scaffold'
+  const canvas = document.createElement('canvas')
+  app.appendChild(canvas)
+  const rig = createSceneRig(canvas)
+  window.addEventListener('resize', rig.resize)
+  const frame = (): void => {
+    rig.updateCamera({ x: 0, y: 0 }, 0, 1 / 60)
+    rig.render()
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
 }

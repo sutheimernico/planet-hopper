@@ -43,7 +43,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 14: Guarded storage + pure aim mapping
 
 ### Phase 2 — Rendering, input, UI, audio
-- [ ] Task 15: Scene rig (renderer, camera, starfield, bloom)
+- [x] Task 15: Scene rig (renderer, camera, starfield, bloom)
 - [ ] Task 16: Entity mesh pools
 - [ ] Task 17: Trajectory preview line + pointer controls
 - [ ] Task 18: HUD, screens, styling (German UI)
@@ -55,6 +55,9 @@ The loop MUST NOT invent tasks beyond the plan.
 
 ### Needs Nico live verify (accumulates during Phase 2)
 (visual/game-feel checks that need a real display + GPU — appended as tasks complete)
+- [ ] Task 15: `npm run dev` → confirm dark space, starfield with subtle bloom, no console errors
+      (agent smoke-checked only that the module graph serves/builds without error; cannot see a
+      real WebGL canvas)
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it
