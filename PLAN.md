@@ -47,7 +47,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 16: Entity mesh pools
 - [x] Task 17: Trajectory preview line + pointer controls
 - [x] Task 18: HUD, screens, styling (German UI)
-- [ ] Task 19: Game bootstrap (main.ts wiring)
+- [x] Task 19: Game bootstrap (main.ts wiring)
 - [ ] Task 20: Audio synth + trail + bursts
 - [ ] Task 21: Dev FPS overlay + performance pass
 - [ ] Task 22: GitHub Pages deploy workflow
@@ -58,6 +58,10 @@ The loop MUST NOT invent tasks beyond the plan.
 - [ ] Task 15: `npm run dev` → confirm dark space, starfield with subtle bloom, no console errors
       (agent smoke-checked only that the module graph serves/builds without error; cannot see a
       real WebGL canvas)
+- [ ] Task 19: `npm run dev` → start screen; Start → orbit around the first planet; drag shows
+      dashed preview; release launches; capture into next orbit works; HUD counts; Esc pauses;
+      dying shows game over; Nochmal restarts. Zero console errors. (agent smoke-checked only that
+      the module graph serves/builds without error; cannot drive pointer input or see the canvas)
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it
