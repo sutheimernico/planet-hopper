@@ -46,7 +46,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 15: Scene rig (renderer, camera, starfield, bloom)
 - [x] Task 16: Entity mesh pools
 - [x] Task 17: Trajectory preview line + pointer controls
-- [ ] Task 18: HUD, screens, styling (German UI)
+- [x] Task 18: HUD, screens, styling (German UI)
 - [ ] Task 19: Game bootstrap (main.ts wiring)
 - [ ] Task 20: Audio synth + trail + bursts
 - [ ] Task 21: Dev FPS overlay + performance pass

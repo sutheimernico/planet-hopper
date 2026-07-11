@@ -1,0 +1,45 @@
+/* src/ui/style.css */
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #05060f; }
+#app, canvas { width: 100%; height: 100%; display: block; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; color: #e2e8f0; transition: opacity .3s; }
+.hud-dimmed { opacity: .4; }
+.hud-corner { position: absolute; top: 16px; }
+.hud-tl { left: 16px; }
+.hud-tr { right: 16px; text-align: right; }
+.hud-label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; }
+.hud-num { font-family: ui-monospace, monospace; font-weight: 700; font-size: 24px; }
+.hud-combo { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, .8); font-size: 14px; }
+.hud-fuelbar { width: 130px; height: 10px; margin-top: 5px; border-radius: 99px;
+  background: rgba(148, 163, 184, .25); overflow: hidden; }
+.hud-fuelfill { height: 100%; border-radius: 99px; width: 100%;
+  background: linear-gradient(90deg, #06b6d4, #67e8f9);
+  box-shadow: 0 0 8px rgba(103, 232, 249, .8); transition: width .15s; }
+.hud-fuel-low { background: linear-gradient(90deg, #dc2626, #f87171);
+  box-shadow: 0 0 8px rgba(248, 113, 113, .8); }
+.hud-hint { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+  font-size: 13px; color: rgba(226, 232, 240, .7); background: rgba(5, 6, 15, .5);
+  padding: 5px 14px; border-radius: 99px; transition: opacity .3s; white-space: nowrap; }
+.hud-warning { position: absolute; top: 18%; left: 50%; transform: translateX(-50%);
+  font-size: 16px; font-weight: 700; color: #f87171;
+  text-shadow: 0 0 12px rgba(248, 113, 113, .8); transition: opacity .2s; }
+
+.screen { position: fixed; inset: 0; display: none; flex-direction: column; gap: 18px;
+  align-items: center; justify-content: center; text-align: center; color: #e2e8f0;
+  background: rgba(5, 6, 15, .72); backdrop-filter: blur(6px); }
+.screen-visible { display: flex; }
+.screen h1 { font-size: clamp(28px, 6vw, 52px); letter-spacing: .02em;
+  text-shadow: 0 0 24px rgba(103, 232, 249, .5); }
+.screen-sub { color: #94a3b8; line-height: 1.6; max-width: 34em; }
+.screen-score { font-family: ui-monospace, monospace; font-size: 22px; font-weight: 700; }
+.screen-high { color: #fbbf24; }
+.screen-btn { pointer-events: auto; cursor: pointer; font-size: 18px; font-weight: 700;
+  color: #05060f; background: linear-gradient(90deg, #22d3ee, #67e8f9);
+  border: none; border-radius: 99px; padding: 12px 44px;
+  box-shadow: 0 0 24px rgba(34, 211, 238, .5); }
+.screen-btn:hover { filter: brightness(1.1); }
