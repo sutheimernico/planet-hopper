@@ -3,6 +3,17 @@ import {
   CORRIDOR_HALF_WIDTH, SPACING_MAX, SPACING_MIN,
 } from '../src/core/constants'
 import { createWorld } from '../src/world/generator'
+import type { WorldSnapshot } from '../src/world/types'
+
+// snapshot() returns live references to the generator's closure arrays and prune mutates
+// them in place via splice — comparing two snapshots taken around a prune call compares
+// an object to itself and always passes. Copy the ids out as primitives BEFORE pruning
+// to pin real before/after behavior (review finding, Task 21).
+const idsOf = (s: WorldSnapshot): { planets: number[]; crystals: number[]; suns: number[] } => ({
+  planets: s.planets.map((p) => p.id),
+  crystals: s.crystals.map((c) => c.id),
+  suns: s.suns.map((sun) => sun.id),
+})
 
 describe('createWorld', () => {
   it('same seed → identical world', () => {
@@ -62,22 +73,26 @@ describe('createWorld', () => {
   it('prune is a no-op once nothing is behind the cutoff (allocation-free early exit)', () => {
     const w = createWorld(13)
     w.ensureUntil(2000)
-    const before = w.snapshot()
+    const before = idsOf(w.snapshot()) // value copy, taken before prune
+    expect(before.planets.length).toBeGreaterThan(0) // guard: a wipe must not pass as "equal"
     w.prune(-1000) // first entity sits at x=0 → already clears the cutoff
-    const after = w.snapshot()
-    expect(after.planets).toEqual(before.planets)
-    expect(after.crystals).toEqual(before.crystals)
-    expect(after.suns).toEqual(before.suns)
+    expect(idsOf(w.snapshot())).toEqual(before)
   })
   it('prune stays idempotent when called repeatedly with the same cutoff', () => {
     const w = createWorld(21)
     w.ensureUntil(2000)
+    // expected survivors, computed as primitives before any prune — catches both
+    // over-pruning on the first call and drift on the second
+    const s = w.snapshot()
+    const expected = {
+      planets: s.planets.filter((p) => p.pos.x >= 500).map((p) => p.id),
+      crystals: s.crystals.filter((c) => c.pos.x >= 500).map((c) => c.id),
+      suns: s.suns.filter((sun) => sun.pos.x >= 500).map((sun) => sun.id),
+    }
+    expect(expected.planets.length).toBeGreaterThan(0)
     w.prune(500)
-    const once = w.snapshot()
+    expect(idsOf(w.snapshot())).toEqual(expected)
     w.prune(500) // second call hits the early-exit path — must change nothing
-    const twice = w.snapshot()
-    expect(twice.planets).toEqual(once.planets)
-    expect(twice.crystals).toEqual(once.crystals)
-    expect(twice.suns).toEqual(once.suns)
+    expect(idsOf(w.snapshot())).toEqual(expected)
   })
 })
