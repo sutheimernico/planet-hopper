@@ -9,6 +9,7 @@ import { len, type Vec } from './core/vec'
 import { attachControls } from './input/controls'
 import { launchVelocity } from './physics/orbit'
 import { simulateTrajectory } from './physics/trajectory'
+import { attachDevHud } from './render/devhud'
 import { createEffects } from './render/effects'
 import { createEntityPools } from './render/meshes'
 import { createPreviewLine } from './render/preview'
@@ -57,6 +58,7 @@ function boot(root: HTMLDivElement): void {
       return m
     },
   })
+  const devHud = import.meta.env.DEV ? attachDevHud(root) : null
 
   let phase: GamePhase = 'menu'
   let world = createWorld(Date.now() % 2 ** 31)
@@ -198,6 +200,7 @@ function boot(root: HTMLDivElement): void {
       dimmed: run.mode === 'flying',
     })
     rig.render()
+    devHud?.(performance.now() - now)
     requestAnimationFrame(frame)
   }
 

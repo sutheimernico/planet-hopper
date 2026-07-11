@@ -49,7 +49,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 18: HUD, screens, styling (German UI)
 - [x] Task 19: Game bootstrap (main.ts wiring)
 - [x] Task 20: Audio synth + trail + bursts
-- [ ] Task 21: Dev FPS overlay + performance pass
+- [x] Task 21: Dev FPS overlay + performance pass
 - [ ] Task 22: GitHub Pages deploy workflow
 - [ ] Task 23: Documentation sync + final verification
 
@@ -67,6 +67,12 @@ The loop MUST NOT invent tasks beyond the plan.
       (bottom-right) toggles sound and persists across reloads. (agent smoke-checked only that the
       module graph serves/builds without error and gate/build are green; cannot hear WebAudio
       output or see the canvas)
+- [ ] Task 21: `npm run dev` (dev build) → bottom-left dev fps readout shows a plausible number
+      and updates every ~30 frames; watch `renderer.info.render.calls` in devtools while flying
+      for 2 minutes and confirm it stays roughly constant (pooling holds, no per-frame mesh
+      allocation). Agent is headless and cannot observe real fps or render-call counts — only
+      confirmed the overlay is tree-shaken out of the prod build (absent from `dist/`) and that
+      `npm run build` gzip size is 145 kB, well under the 500 kB budget.
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it
