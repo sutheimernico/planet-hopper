@@ -1,4 +1,5 @@
 // src/main.ts
+import { createSfx } from './audio/sfx'
 import { createAccumulator } from './core/loop'
 import * as C from './core/constants'
 import { launch, newRun, tickRun, type SimEvent } from './core/sim'
@@ -8,6 +9,7 @@ import { len, type Vec } from './core/vec'
 import { attachControls } from './input/controls'
 import { launchVelocity } from './physics/orbit'
 import { simulateTrajectory } from './physics/trajectory'
+import { createEffects } from './render/effects'
 import { createEntityPools } from './render/meshes'
 import { createPreviewLine } from './render/preview'
 import { createSceneRig } from './render/scene'
@@ -44,8 +46,17 @@ function boot(root: HTMLDivElement): void {
   const rig = createSceneRig(canvas)
   const pools = createEntityPools(rig.scene)
   const preview = createPreviewLine(rig.scene)
-  const hud = createHud(root)
+  const effects = createEffects(rig.scene)
   const storage = createStorage(window.localStorage)
+  const sfx = createSfx(storage.getMuted())
+  const hud = createHud(root, {
+    onToggleMute: () => {
+      const m = !sfx.isMuted()
+      sfx.setMuted(m)
+      storage.setMuted(m)
+      return m
+    },
+  })
 
   let phase: GamePhase = 'menu'
   let world = createWorld(Date.now() % 2 ** 31)
@@ -167,6 +178,8 @@ function boot(root: HTMLDivElement): void {
 
     pools.sync(world.snapshot())
     pools.updateShip(shipPos, velAngle)
+    effects.pushTrail(shipPos, run.mode === 'flying')
+    effects.update(elapsed)
     rig.updateCamera(shipPos, speed, elapsed)
     hud.update({
       fuel01: run.fuel / C.FUEL_MAX,
@@ -185,10 +198,13 @@ function boot(root: HTMLDivElement): void {
   // takes the full SimEvent, not just the type — Task 20's audio hooks need the
   // payload (death cause, captured planetId) (review finding, Task 19)
   function handleEvent(e: SimEvent): void {
-    if (e.type === 'launch') rig.fovKick()
-    if (e.type === 'capture') rig.addShake(1.6)
-    if (e.type === 'death') rig.addShake(2.5)
-    // audio hooks land in Task 20
+    switch (e.type) {
+      case 'launch': rig.fovKick(); sfx.launch(); break
+      case 'capture': rig.addShake(1.6); effects.burst(run.ship.pos, 0x67e8f9); sfx.capture(); break
+      case 'crystal': effects.burst(run.ship.pos, 0x22d3ee); sfx.crystal(); break
+      case 'flyby': sfx.flyby(); break
+      case 'death': rig.addShake(2.5); effects.burst(run.ship.pos, 0xf87171); sfx.death(); break
+    }
   }
 
   requestAnimationFrame(frame)

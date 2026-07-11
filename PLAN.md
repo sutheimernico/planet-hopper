@@ -48,7 +48,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 17: Trajectory preview line + pointer controls
 - [x] Task 18: HUD, screens, styling (German UI)
 - [x] Task 19: Game bootstrap (main.ts wiring)
-- [ ] Task 20: Audio synth + trail + bursts
+- [x] Task 20: Audio synth + trail + bursts
 - [ ] Task 21: Dev FPS overlay + performance pass
 - [ ] Task 22: GitHub Pages deploy workflow
 - [ ] Task 23: Documentation sync + final verification
@@ -62,6 +62,11 @@ The loop MUST NOT invent tasks beyond the plan.
       dashed preview; release launches; capture into next orbit works; HUD counts; Esc pauses;
       dying shows game over; Nochmal restarts. Zero console errors. (agent smoke-checked only that
       the module graph serves/builds without error; cannot drive pointer input or see the canvas)
+- [ ] Task 20: `npm run dev` → launch/capture/crystal sounds audible, engine trail glows behind
+      the ship in flight, capture/crystal/death bursts show at the ship's position, mute button
+      (bottom-right) toggles sound and persists across reloads. (agent smoke-checked only that the
+      module graph serves/builds without error and gate/build are green; cannot hear WebAudio
+      output or see the canvas)
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it

@@ -12,7 +12,9 @@ export interface Hud {
   update(view: HudView): void
 }
 
-export function createHud(root: HTMLElement): Hud {
+export interface HudOptions { onToggleMute(): boolean } // returns new muted state
+
+export function createHud(root: HTMLElement, options: HudOptions): Hud {
   root.insertAdjacentHTML(
     'beforeend',
     `<div id="hud">
@@ -27,6 +29,7 @@ export function createHud(root: HTMLElement): Hud {
       </div>
       <div id="hud-warning" class="hud-warning"></div>
       <div id="hud-hint" class="hud-hint"></div>
+      <button id="hud-mute" class="hud-mute" aria-label="Ton an/aus">🔊</button>
     </div>`,
   )
   const el = (id: string): HTMLElement => root.querySelector(`#${id}`)!
@@ -36,6 +39,10 @@ export function createHud(root: HTMLElement): Hud {
   const mult = el('hud-mult')
   const hint = el('hud-hint')
   const warning = el('hud-warning')
+  const muteBtn = el('hud-mute')
+  muteBtn.addEventListener('click', () => {
+    muteBtn.textContent = options.onToggleMute() ? '🔇' : '🔊'
+  })
   return {
     update(v) {
       fuel.style.width = `${Math.round(v.fuel01 * 100)}%`
