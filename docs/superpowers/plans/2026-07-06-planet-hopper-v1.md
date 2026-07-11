@@ -1703,6 +1703,7 @@ import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import type { Vec } from '../core/vec'
 
 const BASE_FOV = 55
@@ -1744,6 +1745,9 @@ export function createSceneRig(canvas: HTMLCanvasElement): SceneRig {
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
   composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.85, 0.55, 0.8))
+  // r152+ color management: without a final OutputPass the composer blits a linear-space
+  // buffer to the canvas — no sRGB encode, colors render too dark (SOTA check, Phase 2 boundary)
+  composer.addPass(new OutputPass())
 
   let shake = 0
   let fov = BASE_FOV
