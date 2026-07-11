@@ -956,11 +956,17 @@ export function createWorld(seed: number): World {
       while ((planets.length > 0 ? planets[planets.length - 1]!.pos.x : -Infinity) < x) addPlanet()
     },
     prune(behindX: number): void {
-      const keep = <T extends { pos: { x: number } }>(arr: T[]): T[] =>
-        arr.filter((e) => e.pos.x >= behindX)
-      planets.splice(0, planets.length, ...keep(planets))
-      crystals.splice(0, crystals.length, ...keep(crystals))
-      suns.splice(0, suns.length, ...keep(suns))
+      // entities are appended in ascending x (see addPlanet), so once the front element
+      // clears the cutoff, nothing in the array is behind it — skip the allocating
+      // filter/splice entirely (review finding, Task 19 review #6)
+      const dropBehind = <T extends { pos: { x: number } }>(arr: T[]): void => {
+        if (arr.length === 0 || arr[0]!.pos.x >= behindX) return
+        const kept = arr.filter((e) => e.pos.x >= behindX)
+        arr.splice(0, arr.length, ...kept)
+      }
+      dropBehind(planets)
+      dropBehind(crystals)
+      dropBehind(suns)
     },
     snapshot: (): WorldSnapshot => ({ planets, crystals, suns }),
   }
@@ -2176,6 +2182,10 @@ export interface Hud {
   update(view: HudView): void
 }
 
+// hoisted — constructing this on every update() call (60/s) allocates needlessly
+// (review finding, Task 18 review)
+const numberFmt = new Intl.NumberFormat('de-DE')
+
 export function createHud(root: HTMLElement): Hud {
   root.insertAdjacentHTML(
     'beforeend',
@@ -2204,7 +2214,7 @@ export function createHud(root: HTMLElement): Hud {
     update(v) {
       fuel.style.width = `${Math.round(v.fuel01 * 100)}%`
       fuel.classList.toggle('hud-fuel-low', v.fuel01 < 0.25)
-      points.textContent = new Intl.NumberFormat('de-DE').format(Math.floor(v.points))
+      points.textContent = numberFmt.format(Math.floor(v.points))
       mult.textContent = v.mult > 1 ? `×${v.mult.toFixed(1).replace('.', ',')} Flyby` : ''
       hint.textContent = v.hint ?? ''
       hint.style.opacity = v.hint ? '1' : '0'
@@ -2371,6 +2381,7 @@ import { launch, newRun, tickRun, type SimEvent } from './core/sim'
 import { transition, type GamePhase } from './core/state'
 import { createStorage } from './core/storage'
 import { len, type Vec } from './core/vec'
+import type { Aim } from './input/aim'
 import { attachControls } from './input/controls'
 import { launchVelocity } from './physics/orbit'
 import { simulateTrajectory } from './physics/trajectory'
@@ -2419,6 +2430,10 @@ function boot(root: HTMLDivElement): void {
   let run = newRun(world.snapshot())
   let prevShipPos: Vec = run.ship.pos
   let aiming = false
+  // latest raw pointermove aim, consumed (and cleared) at most once per rendered frame —
+  // simulateTrajectory runs 360 fixed steps and must not run on every raw pointer event
+  // (review finding, Task 19 review #5)
+  let pendingAim: Aim | null = null
 
   const screens = createScreens(root, {
     onStart: () => setPhase('start'),
@@ -2434,6 +2449,7 @@ function boot(root: HTMLDivElement): void {
       // (review finding, Task 19)
       aiming = false
       preview.hide()
+      pendingAim = null
       acc = createAccumulator()
       setPhase('restart')
     },
@@ -2447,6 +2463,7 @@ function boot(root: HTMLDivElement): void {
     if (phase !== 'playing') {
       aiming = false
       preview.hide()
+      pendingAim = null
     }
     if (phase === 'menu') screens.showStart(storage.getHighscore())
     else if (phase === 'paused') screens.showPause()
@@ -2469,20 +2486,15 @@ function boot(root: HTMLDivElement): void {
     onAim: (a) => {
       if (phase !== 'playing') return // captured pointer keeps dragging across a pause
       aiming = true
-      const planet = world.snapshot().planets.find((p) => p.id === run.orbit?.planetId)
-      if (!planet || !run.orbit) return
-      // preview uses launchVelocity + simulateTrajectory — the live physics, no duplicate
-      const t = simulateTrajectory(
-        { pos: run.ship.pos, vel: launchVelocity(a.dir, a.power01) },
-        world.snapshot(), planet.id,
-        Math.round(C.PREVIEW_SECONDS / C.DT), C.PREVIEW_SAMPLE_EVERY,
-      )
-      preview.show(t.points)
+      // stored, not computed here — frame() consumes it at most once per rendered frame
+      // (review finding, Task 19 review #5)
+      pendingAim = a
     },
     onRelease: (a) => {
       if (phase !== 'playing') return // no launch from a drag that outlived 'playing'
       aiming = false
       preview.hide()
+      pendingAim = null
       run = launch(run, world.snapshot(), a.dir, a.power01)
       // launch() builds the post-launch RunState directly (bypasses tickRun), and
       // tickRun always replaces `events` with a fresh array next tick ("this tick's
@@ -2494,6 +2506,7 @@ function boot(root: HTMLDivElement): void {
     onCancel: () => {
       aiming = false
       preview.hide()
+      pendingAim = null
     },
   })
 
@@ -2520,12 +2533,34 @@ function boot(root: HTMLDivElement): void {
       const steps = acc.advance(elapsed)
       for (let i = 0; i < steps; i++) {
         prevShipPos = run.ship.pos
-        world.ensureUntil(run.ship.pos.x + C.GENERATE_AHEAD)
-        world.prune(run.ship.pos.x - C.PRUNE_BEHIND)
         run = tickRun(run, world.snapshot(), C.DT)
         for (const e of run.events) handleEvent(e)
       }
+      // ensureUntil/prune moved out of the per-tick loop — at up to MAX_STEPS_PER_FRAME=8
+      // ticks/frame these ran needlessly often (prune reallocates via filter/splice every
+      // call); GENERATE_AHEAD=400 / PRUNE_BEHIND=200 comfortably absorb one frame's worth
+      // of ship movement either way, so once per frame is behaviorally identical
+      // (review finding, Task 19 review #6)
+      world.ensureUntil(run.ship.pos.x + C.GENERATE_AHEAD)
+      world.prune(run.ship.pos.x - C.PRUNE_BEHIND)
       if (run.mode === 'dead') setPhase('die')
+
+      // simulateTrajectory runs 360 fixed steps — recompute the preview at most once per
+      // rendered frame instead of on every raw pointermove (review finding, Task 19 review #5)
+      if (pendingAim) {
+        const aim = pendingAim
+        pendingAim = null
+        const planet = world.snapshot().planets.find((p) => p.id === run.orbit?.planetId)
+        if (planet && run.orbit) {
+          // preview uses launchVelocity + simulateTrajectory — the live physics, no duplicate
+          const t = simulateTrajectory(
+            { pos: run.ship.pos, vel: launchVelocity(aim.dir, aim.power01) },
+            world.snapshot(), planet.id,
+            Math.round(C.PREVIEW_SECONDS / C.DT), C.PREVIEW_SAMPLE_EVERY,
+          )
+          preview.show(t.points)
+        }
+      }
     }
 
     const alpha = acc.alpha()
