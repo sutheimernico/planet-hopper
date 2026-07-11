@@ -2367,7 +2367,7 @@ git commit -m "feat: add hud (free-corners variant) and screens with german ui"
 // src/main.ts
 import { createAccumulator } from './core/loop'
 import * as C from './core/constants'
-import { launch, newRun, tickRun } from './core/sim'
+import { launch, newRun, tickRun, type SimEvent } from './core/sim'
 import { transition, type GamePhase } from './core/state'
 import { createStorage } from './core/storage'
 import { len, type Vec } from './core/vec'
@@ -2429,12 +2429,25 @@ function boot(root: HTMLDivElement): void {
       pools.reset() // new world reuses ids — drop stale meshes (review finding, Task 9)
       run = newRun(world.snapshot())
       prevShipPos = run.ship.pos
+      // gesture + accumulator are per-run state: a stale preview line from the old
+      // world and a leftover step residual must not leak into the new run
+      // (review finding, Task 19)
+      aiming = false
+      preview.hide()
+      acc = createAccumulator()
       setPhase('restart')
     },
   })
 
   function setPhase(event: Parameters<typeof transition>[1]): void {
     phase = transition(phase, event)
+    // leaving 'playing' (pause, tab-hide, death) must freeze the aim gesture — with
+    // pointer capture a mid-drag release could otherwise launch() while paused
+    // (review finding, Task 19)
+    if (phase !== 'playing') {
+      aiming = false
+      preview.hide()
+    }
     if (phase === 'menu') screens.showStart(storage.getHighscore())
     else if (phase === 'paused') screens.showPause()
     else if (phase === 'gameover') {
@@ -2454,6 +2467,7 @@ function boot(root: HTMLDivElement): void {
   attachControls(canvas, {
     canAim: () => phase === 'playing' && run.mode === 'orbiting',
     onAim: (a) => {
+      if (phase !== 'playing') return // captured pointer keeps dragging across a pause
       aiming = true
       const planet = world.snapshot().planets.find((p) => p.id === run.orbit?.planetId)
       if (!planet || !run.orbit) return
@@ -2466,6 +2480,7 @@ function boot(root: HTMLDivElement): void {
       preview.show(t.points)
     },
     onRelease: (a) => {
+      if (phase !== 'playing') return // no launch from a drag that outlived 'playing'
       aiming = false
       preview.hide()
       run = launch(run, world.snapshot(), a.dir, a.power01)
@@ -2488,7 +2503,7 @@ function boot(root: HTMLDivElement): void {
   })
   window.addEventListener('resize', rig.resize)
 
-  const acc = createAccumulator()
+  let acc = createAccumulator()
   let last = performance.now()
 
   const frame = (now: number): void => {
@@ -2502,7 +2517,7 @@ function boot(root: HTMLDivElement): void {
         world.ensureUntil(run.ship.pos.x + C.GENERATE_AHEAD)
         world.prune(run.ship.pos.x - C.PRUNE_BEHIND)
         run = tickRun(run, world.snapshot(), C.DT)
-        for (const e of run.events) handleEvent(e.type)
+        for (const e of run.events) handleEvent(e)
       }
       if (run.mode === 'dead') setPhase('die')
     }
@@ -2533,10 +2548,12 @@ function boot(root: HTMLDivElement): void {
     requestAnimationFrame(frame)
   }
 
-  function handleEvent(type: string): void {
-    if (type === 'launch') rig.fovKick()
-    if (type === 'capture') rig.addShake(1.6)
-    if (type === 'death') rig.addShake(2.5)
+  // takes the full SimEvent, not just the type — Task 20's audio hooks need the
+  // payload (death cause, captured planetId) (review finding, Task 19)
+  function handleEvent(e: SimEvent): void {
+    if (e.type === 'launch') rig.fovKick()
+    if (e.type === 'capture') rig.addShake(1.6)
+    if (e.type === 'death') rig.addShake(2.5)
     // audio hooks land in Task 20
   }
 
@@ -2718,8 +2735,8 @@ function handleEvent(e: SimEvent): void {
   }
 }
 ```
-(change the loop to `for (const e of run.events) handleEvent(e)` and import `SimEvent`
-from `./core/sim`). In the frame function, after `pools.updateShip(...)`:
+(the frame loop already passes the full event and imports `SimEvent` — done in Task 19,
+review amendment). In the frame function, after `pools.updateShip(...)`:
 
 ```ts
 effects.pushTrail(shipPos, run.mode === 'flying')
