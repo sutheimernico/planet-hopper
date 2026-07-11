@@ -129,6 +129,12 @@ function boot(root: HTMLDivElement): void {
       aiming = false
       preview.hide()
       run = launch(run, world.snapshot(), a.dir, a.power01)
+      // launch() builds the post-launch RunState directly (bypasses tickRun), and
+      // tickRun always replaces `events` with a fresh array next tick ("this tick's
+      // discrete happenings; replaced every tick", core/sim.ts) — so the 'launch'
+      // event set here would be silently dropped before the frame loop's handleEvent
+      // ever sees it unless it's drained immediately (review finding, Task 20)
+      if (run.mode === 'flying') for (const e of run.events) handleEvent(e)
     },
     onCancel: () => {
       aiming = false
