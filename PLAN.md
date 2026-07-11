@@ -50,7 +50,7 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 19: Game bootstrap (main.ts wiring)
 - [x] Task 20: Audio synth + trail + bursts
 - [x] Task 21: Dev FPS overlay + performance pass
-- [ ] Task 22: GitHub Pages deploy workflow
+- [x] Task 22: GitHub Pages deploy workflow
 - [ ] Task 23: Documentation sync + final verification
 
 ### Needs Nico live verify (accumulates during Phase 2)
