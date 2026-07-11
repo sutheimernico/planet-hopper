@@ -59,4 +59,25 @@ describe('createWorld', () => {
     expect(after.length).toBeLessThan(before)
     for (const p of after) expect(p.pos.x).toBeGreaterThanOrEqual(500)
   })
+  it('prune is a no-op once nothing is behind the cutoff (allocation-free early exit)', () => {
+    const w = createWorld(13)
+    w.ensureUntil(2000)
+    const before = w.snapshot()
+    w.prune(-1000) // first entity sits at x=0 → already clears the cutoff
+    const after = w.snapshot()
+    expect(after.planets).toEqual(before.planets)
+    expect(after.crystals).toEqual(before.crystals)
+    expect(after.suns).toEqual(before.suns)
+  })
+  it('prune stays idempotent when called repeatedly with the same cutoff', () => {
+    const w = createWorld(21)
+    w.ensureUntil(2000)
+    w.prune(500)
+    const once = w.snapshot()
+    w.prune(500) // second call hits the early-exit path — must change nothing
+    const twice = w.snapshot()
+    expect(twice.planets).toEqual(once.planets)
+    expect(twice.crystals).toEqual(once.crystals)
+    expect(twice.suns).toEqual(once.suns)
+  })
 })

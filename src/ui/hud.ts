@@ -14,6 +14,10 @@ export interface Hud {
 
 export interface HudOptions { onToggleMute(): boolean } // returns new muted state
 
+// hoisted — constructing this on every update() call (60/s) allocates needlessly
+// (review finding, Task 18 review)
+const numberFmt = new Intl.NumberFormat('de-DE')
+
 export function createHud(root: HTMLElement, options: HudOptions): Hud {
   root.insertAdjacentHTML(
     'beforeend',
@@ -47,7 +51,7 @@ export function createHud(root: HTMLElement, options: HudOptions): Hud {
     update(v) {
       fuel.style.width = `${Math.round(v.fuel01 * 100)}%`
       fuel.classList.toggle('hud-fuel-low', v.fuel01 < 0.25)
-      points.textContent = new Intl.NumberFormat('de-DE').format(Math.floor(v.points))
+      points.textContent = numberFmt.format(Math.floor(v.points))
       mult.textContent = v.mult > 1 ? `×${v.mult.toFixed(1).replace('.', ',')} Flyby` : ''
       hint.textContent = v.hint ?? ''
       hint.style.opacity = v.hint ? '1' : '0'

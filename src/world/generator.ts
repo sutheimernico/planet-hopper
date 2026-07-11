@@ -75,11 +75,17 @@ export function createWorld(seed: number): World {
       while ((planets.length > 0 ? planets[planets.length - 1]!.pos.x : -Infinity) < x) addPlanet()
     },
     prune(behindX: number): void {
-      const keep = <T extends { pos: { x: number } }>(arr: T[]): T[] =>
-        arr.filter((e) => e.pos.x >= behindX)
-      planets.splice(0, planets.length, ...keep(planets))
-      crystals.splice(0, crystals.length, ...keep(crystals))
-      suns.splice(0, suns.length, ...keep(suns))
+      // entities are appended in ascending x (see addPlanet), so once the front element
+      // clears the cutoff, nothing in the array is behind it — skip the allocating
+      // filter/splice entirely (review finding, Task 19 review #6)
+      const dropBehind = <T extends { pos: { x: number } }>(arr: T[]): void => {
+        if (arr.length === 0 || arr[0]!.pos.x >= behindX) return
+        const kept = arr.filter((e) => e.pos.x >= behindX)
+        arr.splice(0, arr.length, ...kept)
+      }
+      dropBehind(planets)
+      dropBehind(crystals)
+      dropBehind(suns)
     },
     snapshot: (): WorldSnapshot => ({ planets, crystals, suns }),
   }
