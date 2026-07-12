@@ -61,7 +61,7 @@ binding. Each item is its own commit (iron principle: one change per iteration).
 - [x] Touch pause button in HUD (spec §6)
 - [x] `effects.reset()` clears trail/burst on restart (documented gap, Task 20 review)
 - [x] Ramp monotonicity test (spec §12)
-- [ ] Bookkeeping: deferred-polish/needs-nico/needs-nico-live-verify entries below
+- [x] Bookkeeping: deferred-polish/needs-nico/needs-nico-live-verify entries below
 
 ### Deferred polish (v1.1 candidates)
 Consciously deferred out of v1 so it converges (spec nice-to-haves, from
@@ -94,6 +94,12 @@ is a small standalone iteration.
       allocation). Agent is headless and cannot observe real fps or render-call counts — only
       confirmed the overlay is tree-shaken out of the prod build (absent from `dist/`) and that
       `npm run build` gzip size is 145 kB, well under the 500 kB budget.
+- [ ] Task 24: `npm run dev` → each planet shows a subtle dashed ring at its capture radius
+      (should read as a faint gameplay hint, not a distracting halo — opacity/dash sizing is
+      a judgment call); on a touch device, the bottom-left "⏸" pause button is reachable
+      without interfering with the drag-to-aim gesture and disappears outside `phase ===
+      'playing'`. Agent is headless and cannot judge subtlety, touch-target feel, or whether
+      the ring reads correctly at actual planet sizes/zoom levels on real hardware.
 
 ## Standing mandate (per AUTOPILOT, once per phase — not per iteration)
 - [ ] Phase boundaries: run the self-challenge/SOTA step; write an ADR under `docs/adr/` if it
@@ -106,3 +112,5 @@ is a small standalone iteration.
 - Pre-go-live check of `.github/workflows/deploy.yml` action pins: checkout/setup-node already
   bumped to Node24-ready majors (v5/v6, 2026-07-11); `upload-pages-artifact@v3`/`deploy-pages@v4`
   had no newer major then — re-verify if the remote is created after Sept 2026 (Node20 runtime EOL).
+- WebGL-fallback message (`src/main.ts`) should link to the repo (spec §11) once a public
+  remote exists — inert until then, same dependency as the git-remote decision above.
