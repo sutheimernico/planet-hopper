@@ -60,7 +60,7 @@ binding. Each item is its own commit (iron principle: one change per iteration).
 - [x] Capture-radius ring on pooled planet meshes (spec §3)
 - [x] Touch pause button in HUD (spec §6)
 - [x] `effects.reset()` clears trail/burst on restart (documented gap, Task 20 review)
-- [ ] Ramp monotonicity test (spec §12)
+- [x] Ramp monotonicity test (spec §12)
 - [ ] Bookkeeping: deferred-polish/needs-nico/needs-nico-live-verify entries below
 
 ### Deferred polish (v1.1 candidates)

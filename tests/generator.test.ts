@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CORRIDOR_HALF_WIDTH, SPACING_MAX, SPACING_MIN,
+  CORRIDOR_HALF_WIDTH, RAMP_DISTANCE, SPACING_MAX, SPACING_MIN,
 } from '../src/core/constants'
 import { createWorld } from '../src/world/generator'
 import type { WorldSnapshot } from '../src/world/types'
@@ -94,5 +94,47 @@ describe('createWorld', () => {
     expect(idsOf(w.snapshot())).toEqual(expected)
     w.prune(500) // second call hits the early-exit path — must change nothing
     expect(idsOf(w.snapshot())).toEqual(expected)
+  })
+  it('difficulty ramp (spacing, crystal density) is monotonic in x over a long horizon (spec §12)', () => {
+    const w = createWorld(17)
+    w.ensureUntil(RAMP_DISTANCE * 3) // run well past the ramp's saturation point (spec §5)
+    // copy out primitives immediately — snapshot() returns the generator's live internal
+    // arrays, and asserting against a held reference after further mutation would silently
+    // compare an object to itself (same bug class as the Task 21 prune-test fix, 99916ce)
+    const xs = w.snapshot().planets.map((p) => p.pos.x)
+    const crystalXs = w.snapshot().crystals.map((c) => c.pos.x)
+    expect(xs[xs.length - 1]!).toBeGreaterThan(RAMP_DISTANCE) // horizon crosses the ramp
+
+    // Crystal density: count crystals actually generated per gap from the world's real
+    // output (not a reimplemented formula) — the count is a deterministic function of
+    // ramp alone (jitter only ever touches the y-offset, see generator.ts), so the
+    // observed sequence must be exactly non-increasing.
+    let prevCount = Infinity
+    for (let i = 1; i < xs.length; i++) {
+      const count = crystalXs.filter((x) => x > xs[i - 1]! && x < xs[i]!).length
+      expect(count).toBeLessThanOrEqual(prevCount)
+      prevCount = count
+    }
+
+    // Spacing: a single gap is jittered ±15% (SPACING_MIN/MAX * range(0.85, 1.15)), so it
+    // isn't monotonic step-to-step by itself — bucket-average over the ramp-up phase only
+    // (x below RAMP_DISTANCE, where the real upward trend dominates the jitter) rather than
+    // the whole horizon, which is partly flat/saturated and would make bucket comparisons
+    // noise-sensitive.
+    const rampUpGaps: number[] = []
+    for (let i = 1; i < xs.length; i++) {
+      if (xs[i - 1]! < RAMP_DISTANCE) rampUpGaps.push(xs[i]! - xs[i - 1]!)
+    }
+    const BUCKETS = 4
+    const bucketSize = Math.ceil(rampUpGaps.length / BUCKETS)
+    const bucketAvgs: number[] = []
+    for (let b = 0; b * bucketSize < rampUpGaps.length; b++) {
+      const slice = rampUpGaps.slice(b * bucketSize, (b + 1) * bucketSize)
+      bucketAvgs.push(slice.reduce((sum, g) => sum + g, 0) / slice.length)
+    }
+    expect(bucketAvgs.length).toBeGreaterThan(1) // need at least two buckets to compare
+    for (let b = 1; b < bucketAvgs.length; b++) {
+      expect(bucketAvgs[b]!).toBeGreaterThan(bucketAvgs[b - 1]!)
+    }
   })
 })
