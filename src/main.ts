@@ -58,6 +58,8 @@ function boot(root: HTMLDivElement): void {
       storage.setMuted(m)
       return m
     },
+    // touch-friendly equivalent of Esc — same 'pause' transition (spec §6, final review)
+    onPause: () => { if (phase === 'playing') setPhase('pause') },
   })
   const devHud = import.meta.env.DEV ? attachDevHud(root) : null
 
@@ -79,6 +81,7 @@ function boot(root: HTMLDivElement): void {
       world = createWorld(Date.now() % 2 ** 31)
       world.ensureUntil(C.GENERATE_AHEAD)
       pools.reset() // new world reuses ids — drop stale meshes (review finding, Task 9)
+      effects.reset() // clear trail/burst remnants from the previous run (final review)
       run = newRun(world.snapshot())
       prevShipPos = run.ship.pos
       // gesture + accumulator are per-run state: a stale preview line from the old
@@ -223,6 +226,7 @@ function boot(root: HTMLDivElement): void {
       warning: run.voidTimer > 0
         ? `Zurück zum Korridor! ${(C.VOID_GRACE - run.voidTimer).toFixed(1)} s` : null,
       dimmed: run.mode === 'flying',
+      showPause: phase === 'playing',
     })
     rig.render()
     devHud?.(performance.now() - now)

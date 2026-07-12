@@ -32,6 +32,10 @@ html, body { height: 100%; overflow: hidden; background: #05060f; }
   cursor: pointer; background: rgba(10, 14, 28, .6); color: #e2e8f0;
   border: 1px solid rgba(103, 232, 249, .25); border-radius: 99px;
   width: 42px; height: 42px; font-size: 18px; }
+.hud-pause { position: absolute; left: 16px; bottom: 16px; pointer-events: auto;
+  cursor: pointer; background: rgba(10, 14, 28, .6); color: #e2e8f0;
+  border: 1px solid rgba(103, 232, 249, .25); border-radius: 99px;
+  width: 42px; height: 42px; font-size: 18px; }
 
 .screen { position: fixed; inset: 0; display: none; flex-direction: column; gap: 18px;
   align-items: center; justify-content: center; text-align: center; color: #e2e8f0;

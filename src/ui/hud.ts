@@ -6,13 +6,17 @@ export interface HudView {
   hint: string | null // bottom-center contextual hint
   warning: string | null // void countdown etc.
   dimmed: boolean // in flight the HUD drops to 40% opacity
+  showPause: boolean // pause button only makes sense while actually playing (spec §6)
 }
 
 export interface Hud {
   update(view: HudView): void
 }
 
-export interface HudOptions { onToggleMute(): boolean } // returns new muted state
+export interface HudOptions {
+  onToggleMute(): boolean // returns new muted state
+  onPause(): void // touch-friendly equivalent of Esc (spec §6, final review)
+}
 
 // hoisted — constructing this on every update() call (60/s) allocates needlessly
 // (review finding, Task 18 review)
@@ -34,6 +38,7 @@ export function createHud(root: HTMLElement, options: HudOptions): Hud {
       <div id="hud-warning" class="hud-warning"></div>
       <div id="hud-hint" class="hud-hint"></div>
       <button id="hud-mute" class="hud-mute" aria-label="Ton an/aus">🔊</button>
+      <button id="hud-pause" class="hud-pause" aria-label="Pause">⏸</button>
     </div>`,
   )
   const el = (id: string): HTMLElement => root.querySelector(`#${id}`)!
@@ -47,6 +52,8 @@ export function createHud(root: HTMLElement, options: HudOptions): Hud {
   muteBtn.addEventListener('click', () => {
     muteBtn.textContent = options.onToggleMute() ? '🔇' : '🔊'
   })
+  const pauseBtn = el('hud-pause')
+  pauseBtn.addEventListener('click', () => options.onPause())
   return {
     update(v) {
       fuel.style.width = `${Math.round(v.fuel01 * 100)}%`
@@ -58,6 +65,7 @@ export function createHud(root: HTMLElement, options: HudOptions): Hud {
       warning.textContent = v.warning ?? ''
       warning.style.opacity = v.warning ? '1' : '0'
       hud.classList.toggle('hud-dimmed', v.dimmed)
+      pauseBtn.hidden = !v.showPause
     },
   }
 }

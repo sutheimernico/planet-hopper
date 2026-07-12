@@ -3,8 +3,10 @@
 // out of the production bundle.
 export function attachDevHud(root: HTMLElement): (frameMs: number) => void {
   const el = document.createElement('div')
+  // bottom raised past the touch pause button (bottom-left, 42px tall + 16px inset,
+  // final review) so the dev-only readout doesn't sit under it in `npm run dev`
   el.style.cssText =
-    'position:fixed;left:8px;bottom:8px;color:#0f0;font:11px ui-monospace;z-index:9;opacity:.8'
+    'position:fixed;left:8px;bottom:66px;color:#0f0;font:11px ui-monospace;z-index:9;opacity:.8'
   root.appendChild(el)
   const samples: number[] = []
   return (frameMs: number) => {
