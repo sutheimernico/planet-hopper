@@ -2974,6 +2974,347 @@ git commit -m "docs: mark v1 code-complete, record open needs-nico items"
 - Game-feel tuning (GRAVITY, POWER_*, spacing) is expected and happens ONLY in
   `src/core/constants.ts` — tests are written against the constants, not magic numbers.
 
+## Phase 3 — Final-review spec-gap closure
+
+### Task 24: Spec-gap closure (final review, 2026-07-11)
+
+The final cross-review against `docs/superpowers/specs/2026-07-06-planet-hopper-design.md`
+found v1 spec requirements the 23-task plan never covered (§3, §6, §10, §12). Closing these
+is spec compliance, not scope invention. Four independent gaps, each its own commit per the
+"one change per iteration" iron principle — do not bundle them.
+
+**Files:**
+- Modify: `src/render/meshes.ts` (capture-radius ring, spec §3)
+- Modify: `src/ui/hud.ts`, `src/ui/style.css`, `src/main.ts`, `src/render/devhud.ts`
+  (touch pause button, spec §6)
+- Modify: `src/render/effects.ts`, `src/main.ts` (`effects.reset()`, documented Task 20 gap)
+- Modify: `tests/generator.test.ts` (ramp monotonicity test, spec §12)
+
+- [ ] **Part A: Capture-radius ring on pooled planet meshes (spec §3)**
+
+Each planet gets a subtle dashed ring at `captureRadius(planet)` (`src/physics/capture.ts`),
+added as a child of the pooled planet `THREE.Group` so `sync()`/`reset()` dispose it for
+free — no new pooling logic needed. `buildPlanet` switches from three loose primitives to
+the full `Planet` so it can call `captureRadius(p)` directly (single source of truth for the
+radius, no duplicated `CAPTURE_FACTOR` multiply). `disposePlanet`'s `instanceof` check widens
+to also catch the new `THREE.Line` child (the existing Task-16 disposal fix stays intact —
+this only broadens what it disposes).
+
+```ts
+// src/render/meshes.ts — imports
+import * as THREE from 'three'
+import type { Vec } from '../core/vec'
+import { captureRadius } from '../physics/capture'
+import type { Planet, WorldSnapshot } from '../world/types'
+```
+
+```ts
+// src/render/meshes.ts — buildPlanet (replaces the (radius, paletteIndex, hasRing) version)
+const buildPlanet = (p: Planet): THREE.Group => {
+  const g = new THREE.Group()
+  const [body, accent] = PALETTES[p.paletteIndex % PALETTES.length]!
+  const mesh = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(p.radius, 1),
+    new THREE.MeshStandardMaterial({ color: body, flatShading: true, roughness: 0.9 }),
+  )
+  g.add(mesh)
+  if (p.hasRing) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(p.radius * 1.7, p.radius * 0.12, 6, 40),
+      new THREE.MeshStandardMaterial({ color: accent, flatShading: true }),
+    )
+    ring.rotation.x = Math.PI / 2.6
+    g.add(ring)
+  }
+  // subtle dashed capture-radius indicator (spec §3, final review) — same XY plane as
+  // the simulation, pooled with the rest of the group so prune/reset dispose it too
+  g.add(buildCaptureRing(captureRadius(p)))
+  return g
+}
+```
+
+```ts
+// src/render/meshes.ts — disposePlanet widened to also dispose the THREE.Line ring
+const disposePlanet = (obj: THREE.Group): void => {
+  obj.traverse((child) => {
+    if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+      const mat = child.material as THREE.Material
+      child.geometry.dispose()
+      mat.dispose()
+    }
+  })
+}
+```
+
+```ts
+// src/render/meshes.ts — sync() call site
+if (!obj) {
+  obj = buildPlanet(p) // was buildPlanet(p.radius, p.paletteIndex, p.hasRing)
+  obj.position.set(p.pos.x, p.pos.y, 0)
+  ...
+```
+
+```ts
+// src/render/meshes.ts — new helper, placed next to buildShip
+// Faint dashed circle at the planet's capture radius — kept subtle (low opacity, thin
+// dashes) since it's a gameplay hint, not a focal element (spec §3, final review).
+function buildCaptureRing(radius: number): THREE.Line {
+  const SEGMENTS = 48
+  const points: THREE.Vector3[] = []
+  for (let i = 0; i <= SEGMENTS; i++) { // +1 closes the loop so the dash pattern wraps cleanly
+    const a = (i / SEGMENTS) * Math.PI * 2
+    points.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0))
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(points)
+  const mat = new THREE.LineDashedMaterial({
+    color: 0x67e8f9, dashSize: 1.4, gapSize: 1.2, transparent: true, opacity: 0.22,
+  })
+  const ring = new THREE.Line(geo, mat)
+  ring.computeLineDistances()
+  return ring
+}
+```
+
+- [ ] **Gate + commit A**
+
+```bash
+npm run gate && npm run build
+git add src/render/meshes.ts
+git commit -m "feat: add capture-radius ring to pooled planet meshes (spec §3)"
+```
+
+- [ ] **Part B: Touch pause button (spec §6)**
+
+A small on-screen pause button, German aria-label, visible only while `phase === 'playing'`
+(so it never floats over the pause/gameover/start overlay), dispatching the same `'pause'`
+transition as Esc. Same pointer-events pattern as the mute button; placed in the opposite
+bottom corner (bottom-left) so the two buttons don't collide.
+
+Bottom-left is also where the dev-only fps overlay (`src/render/devhud.ts`, Task 21) lives —
+raise its `bottom` offset past the new button's footprint so `npm run dev` doesn't show them
+overlapping (production builds tree-shake the overlay out, so this only affects dev mode).
+
+```ts
+// src/ui/hud.ts — HudView gains showPause; HudOptions gains onPause
+export interface HudView {
+  fuel01: number
+  points: number
+  mult: number
+  hint: string | null // bottom-center contextual hint
+  warning: string | null // void countdown etc.
+  dimmed: boolean // in flight the HUD drops to 40% opacity
+  showPause: boolean // pause button only makes sense while actually playing (spec §6)
+}
+
+export interface HudOptions {
+  onToggleMute(): boolean // returns new muted state
+  onPause(): void // touch-friendly equivalent of Esc (spec §6, final review)
+}
+```
+
+```html
+<!-- src/ui/hud.ts — template, appended after the mute button -->
+<button id="hud-mute" class="hud-mute" aria-label="Ton an/aus">🔊</button>
+<button id="hud-pause" class="hud-pause" aria-label="Pause">⏸</button>
+```
+
+```ts
+// src/ui/hud.ts — binding + click wiring, after the muteBtn block
+const pauseBtn = el('hud-pause')
+pauseBtn.addEventListener('click', () => options.onPause())
+```
+
+```ts
+// src/ui/hud.ts — update(), appended at the end
+hud.classList.toggle('hud-dimmed', v.dimmed)
+pauseBtn.hidden = !v.showPause
+```
+
+```css
+/* src/ui/style.css — appended after .hud-mute */
+.hud-pause { position: absolute; left: 16px; bottom: 16px; pointer-events: auto;
+  cursor: pointer; background: rgba(10, 14, 28, .6); color: #e2e8f0;
+  border: 1px solid rgba(103, 232, 249, .25); border-radius: 99px;
+  width: 42px; height: 42px; font-size: 18px; }
+```
+
+```ts
+// src/main.ts — createHud call gains onPause
+const hud = createHud(root, {
+  onToggleMute: () => {
+    const m = !sfx.isMuted()
+    sfx.setMuted(m)
+    storage.setMuted(m)
+    return m
+  },
+  // touch-friendly equivalent of Esc — same 'pause' transition (spec §6, final review)
+  onPause: () => { if (phase === 'playing') setPhase('pause') },
+})
+```
+
+```ts
+// src/main.ts — hud.update() call gains showPause
+warning: run.voidTimer > 0
+  ? `Zurück zum Korridor! ${(C.VOID_GRACE - run.voidTimer).toFixed(1)} s` : null,
+dimmed: run.mode === 'flying',
+showPause: phase === 'playing',
+```
+
+```ts
+// src/render/devhud.ts — raise the dev-only fps readout past the pause button
+// bottom raised past the touch pause button (bottom-left, 42px tall + 16px inset,
+// final review) so the dev-only readout doesn't sit under it in `npm run dev`
+el.style.cssText =
+  'position:fixed;left:8px;bottom:66px;color:#0f0;font:11px ui-monospace;z-index:9;opacity:.8'
+```
+
+- [ ] **Gate + commit B**
+
+```bash
+npm run gate && npm run build
+git add src/ui/hud.ts src/ui/style.css src/main.ts src/render/devhud.ts
+git commit -m "feat: add touch pause button to hud (spec §6)"
+```
+
+- [ ] **Part C: `effects.reset()` (documented Task 20 review gap)**
+
+The Task 20 review noted a fast restart could leave trail/burst remnants from the previous
+run on screen (`pools.reset()` existed, `effects` had no equivalent). Add `reset()` to the
+`Effects` interface and call it from `onRestart` alongside `pools.reset()`.
+
+```ts
+// src/render/effects.ts — Effects interface
+export interface Effects {
+  pushTrail(pos: Vec, active: boolean): void
+  burst(pos: Vec, color: number): void
+  update(dt: number): void
+  // clears trail + burst buffers — a fast restart must not carry visual remnants from
+  // the previous run into the new one (documented gap, Task 20 review; final review)
+  reset(): void
+}
+```
+
+```ts
+// src/render/effects.ts — returned object, appended after update()
+reset() {
+  trailPos.fill(0)
+  trailCol.fill(0)
+  trailGeo.attributes['position']!.needsUpdate = true
+  trailGeo.attributes['color']!.needsUpdate = true
+  head = 0
+  burstPos.fill(0)
+  burstLife = 0
+  burstMat.opacity = 0
+  burstGeo.attributes['position']!.needsUpdate = true
+},
+```
+
+```ts
+// src/main.ts — onRestart, right after pools.reset()
+pools.reset() // new world reuses ids — drop stale meshes (review finding, Task 9)
+effects.reset() // clear trail/burst remnants from the previous run (final review)
+run = newRun(world.snapshot())
+```
+
+- [ ] **Gate + commit C**
+
+```bash
+npm run gate && npm run build
+git add src/render/effects.ts src/main.ts
+git commit -m "fix: clear trail/burst buffers on restart (effects.reset, task 20 review gap)"
+```
+
+- [ ] **Part D: Ramp monotonicity test (spec §12)**
+
+Spec §12 requires the generator's difficulty ramp to be unit-tested for monotonicity. Two
+observable, deterministic ramp effects: crystal density per gap (falls) and planet spacing
+(grows) — see `src/world/generator.ts`'s `addPlanet`. A first draft of this test recomputed
+both quantities from the imported constants directly instead of reading the generator's real
+output; a mutation check (swap `CRYSTALS_PER_GAP_START`/`END` in `generator.ts`) proved that
+version could not fail no matter how badly the generator broke. The version below is
+black-box: it counts real crystals per real gap and bucket-averages real gap lengths, so it
+actually observes generator behavior. It also follows the value-copies discipline from the
+Task 21 prune-test fix (`99916ce`) — extract primitives from `snapshot()` once, never hold
+the live array reference across further mutation.
+
+```ts
+// tests/generator.test.ts — import line
+import {
+  CORRIDOR_HALF_WIDTH, RAMP_DISTANCE, SPACING_MAX, SPACING_MIN,
+} from '../src/core/constants'
+```
+
+```ts
+// tests/generator.test.ts — new test, appended at the end of the describe block
+  it('difficulty ramp (spacing, crystal density) is monotonic in x over a long horizon (spec §12)', () => {
+    const w = createWorld(17)
+    w.ensureUntil(RAMP_DISTANCE * 3) // run well past the ramp's saturation point (spec §5)
+    // copy out primitives immediately — snapshot() returns the generator's live internal
+    // arrays, and asserting against a held reference after further mutation would silently
+    // compare an object to itself (same bug class as the Task 21 prune-test fix, 99916ce)
+    const xs = w.snapshot().planets.map((p) => p.pos.x)
+    const crystalXs = w.snapshot().crystals.map((c) => c.pos.x)
+    expect(xs[xs.length - 1]!).toBeGreaterThan(RAMP_DISTANCE) // horizon crosses the ramp
+
+    // Crystal density: count crystals actually generated per gap from the world's real
+    // output (not a reimplemented formula) — the count is a deterministic function of
+    // ramp alone (jitter only ever touches the y-offset, see generator.ts), so the
+    // observed sequence must be exactly non-increasing.
+    let prevCount = Infinity
+    for (let i = 1; i < xs.length; i++) {
+      const count = crystalXs.filter((x) => x > xs[i - 1]! && x < xs[i]!).length
+      expect(count).toBeLessThanOrEqual(prevCount)
+      prevCount = count
+    }
+
+    // Spacing: a single gap is jittered ±15% (SPACING_MIN/MAX * range(0.85, 1.15)), so it
+    // isn't monotonic step-to-step by itself — bucket-average over the ramp-up phase only
+    // (x below RAMP_DISTANCE, where the real upward trend dominates the jitter) rather than
+    // the whole horizon, which is partly flat/saturated and would make bucket comparisons
+    // noise-sensitive.
+    const rampUpGaps: number[] = []
+    for (let i = 1; i < xs.length; i++) {
+      if (xs[i - 1]! < RAMP_DISTANCE) rampUpGaps.push(xs[i]! - xs[i - 1]!)
+    }
+    const BUCKETS = 4
+    const bucketSize = Math.ceil(rampUpGaps.length / BUCKETS)
+    const bucketAvgs: number[] = []
+    for (let b = 0; b * bucketSize < rampUpGaps.length; b++) {
+      const slice = rampUpGaps.slice(b * bucketSize, (b + 1) * bucketSize)
+      bucketAvgs.push(slice.reduce((sum, g) => sum + g, 0) / slice.length)
+    }
+    expect(bucketAvgs.length).toBeGreaterThan(1) // need at least two buckets to compare
+    for (let b = 1; b < bucketAvgs.length; b++) {
+      expect(bucketAvgs[b]!).toBeGreaterThan(bucketAvgs[b - 1]!)
+    }
+  })
+```
+
+- [ ] **Gate + commit D**
+
+```bash
+npm run gate && npm run build
+git add tests/generator.test.ts
+git commit -m "test: pin difficulty ramp monotonicity over a long horizon (spec §12)"
+```
+
+- [ ] **Part E: Bookkeeping**
+
+Update `PLAN.md`:
+- "Deferred polish (v1.1 candidates)" gains: adaptive DPR feedback loop (spec §10 — needs
+  real-fps measurement on real hardware, Nico territory; the existing DPR cap is static).
+- "Needs Nico" gains: WebGL-fallback message should link to the repo (spec §11) once a
+  public remote exists — inert until then.
+- "Needs Nico live verify" gains one entry covering both the capture-radius ring and the
+  pause button (headless agent cannot judge subtlety/opacity or touch-target feel).
+
+- [ ] **Commit E**
+
+```bash
+git add PLAN.md AUTOPILOT_LOG.md
+git commit -m "docs: bookkeeping for spec-gap closure (deferred DPR, needs-nico repo link, live verify)"
+```
+
 ## Deferred polish (spec nice-to-haves, add as open PLAN.md items after Task 23)
 
 Consciously NOT in the tasks above, so v1 converges; each is a small standalone iteration:

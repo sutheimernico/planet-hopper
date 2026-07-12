@@ -53,6 +53,16 @@ The loop MUST NOT invent tasks beyond the plan.
 - [x] Task 22: GitHub Pages deploy workflow
 - [x] Task 23: Documentation sync + final verification
 
+### Final-review follow-ups (Task 24, spec-gap closure — 2026-07-11)
+Full task text (exact code, byte-consistent) lives in
+`docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` under "Task 24" — that text is
+binding. Each item is its own commit (iron principle: one change per iteration).
+- [ ] Capture-radius ring on pooled planet meshes (spec §3)
+- [ ] Touch pause button in HUD (spec §6)
+- [ ] `effects.reset()` clears trail/burst on restart (documented gap, Task 20 review)
+- [ ] Ramp monotonicity test (spec §12)
+- [ ] Bookkeeping: deferred-polish/needs-nico/needs-nico-live-verify entries below
+
 ### Deferred polish (v1.1 candidates)
 Consciously deferred out of v1 so it converges (spec nice-to-haves, from
 `docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` "Deferred polish"); each
@@ -61,6 +71,8 @@ is a small standalone iteration.
 - [ ] Slight time-dilation on flyby bonus (spec §6 juice).
 - [ ] Ambient synth pad (spec §7) — SFX ship first; pad needs volume balancing on
       real speakers.
+- [ ] Adaptive DPR feedback loop (spec §10) — the current DPR cap (≤2) is static; a real
+      feedback loop needs measured fps on real hardware to tune against (Nico territory).
 
 ### Needs Nico live verify (accumulates during Phase 2)
 (visual/game-feel checks that need a real display + GPU — appended as tasks complete)
