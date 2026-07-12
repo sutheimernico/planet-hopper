@@ -1,7 +1,8 @@
 // src/render/meshes.ts
 import * as THREE from 'three'
 import type { Vec } from '../core/vec'
-import type { WorldSnapshot } from '../world/types'
+import { captureRadius } from '../physics/capture'
+import type { Planet, WorldSnapshot } from '../world/types'
 
 // Low-poly toon biome palettes (body / accent), indexed by Planet.paletteIndex.
 const PALETTES: Array<[number, number]> = [
@@ -38,31 +39,36 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
   const ship = buildShip()
   scene.add(ship)
 
-  const buildPlanet = (radius: number, paletteIndex: number, hasRing: boolean): THREE.Group => {
+  const buildPlanet = (p: Planet): THREE.Group => {
     const g = new THREE.Group()
-    const [body, accent] = PALETTES[paletteIndex % PALETTES.length]!
+    const [body, accent] = PALETTES[p.paletteIndex % PALETTES.length]!
     const mesh = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(radius, 1),
+      new THREE.IcosahedronGeometry(p.radius, 1),
       new THREE.MeshStandardMaterial({ color: body, flatShading: true, roughness: 0.9 }),
     )
     g.add(mesh)
-    if (hasRing) {
+    if (p.hasRing) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius * 1.7, radius * 0.12, 6, 40),
+        new THREE.TorusGeometry(p.radius * 1.7, p.radius * 0.12, 6, 40),
         new THREE.MeshStandardMaterial({ color: accent, flatShading: true }),
       )
       ring.rotation.x = Math.PI / 2.6
       g.add(ring)
     }
+    // subtle dashed capture-radius indicator (spec §3, final review) — same XY plane as
+    // the simulation, pooled with the rest of the group so prune/reset dispose it too
+    g.add(buildCaptureRing(captureRadius(p)))
     return g
   }
 
   // planets own per-instance geometries/materials (radius/palette-specific) — dispose on
   // removal or endless pruning + restarts leak GPU buffers; crystals/suns reuse the shared
   // singletons above, which must stay alive (review finding, 2026-07-11)
+  // capture-ring child is a THREE.Line, not a THREE.Mesh — both expose the same disposable
+  // geometry/material shape (final review, capture-ring gap closure)
   const disposePlanet = (obj: THREE.Group): void => {
     obj.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
+      if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
         const mat = child.material as THREE.Material
         child.geometry.dispose()
         mat.dispose()
@@ -77,7 +83,7 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
         seen.add(p.id)
         let obj = planetObjs.get(p.id)
         if (!obj) {
-          obj = buildPlanet(p.radius, p.paletteIndex, p.hasRing)
+          obj = buildPlanet(p)
           obj.position.set(p.pos.x, p.pos.y, 0)
           planetObjs.set(p.id, obj)
           scene.add(obj)
@@ -145,6 +151,24 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
       sunObjs.clear()
     },
   }
+}
+
+// Faint dashed circle at the planet's capture radius — kept subtle (low opacity, thin
+// dashes) since it's a gameplay hint, not a focal element (spec §3, final review).
+function buildCaptureRing(radius: number): THREE.Line {
+  const SEGMENTS = 48
+  const points: THREE.Vector3[] = []
+  for (let i = 0; i <= SEGMENTS; i++) { // +1 closes the loop so the dash pattern wraps cleanly
+    const a = (i / SEGMENTS) * Math.PI * 2
+    points.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0))
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(points)
+  const mat = new THREE.LineDashedMaterial({
+    color: 0x67e8f9, dashSize: 1.4, gapSize: 1.2, transparent: true, opacity: 0.22,
+  })
+  const ring = new THREE.Line(geo, mat)
+  ring.computeLineDistances()
+  return ring
 }
 
 function buildShip(): THREE.Group {

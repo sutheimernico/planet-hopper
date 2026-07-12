@@ -57,7 +57,7 @@ The loop MUST NOT invent tasks beyond the plan.
 Full task text (exact code, byte-consistent) lives in
 `docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` under "Task 24" — that text is
 binding. Each item is its own commit (iron principle: one change per iteration).
-- [ ] Capture-radius ring on pooled planet meshes (spec §3)
+- [x] Capture-radius ring on pooled planet meshes (spec §3)
 - [ ] Touch pause button in HUD (spec §6)
 - [ ] `effects.reset()` clears trail/burst on restart (documented gap, Task 20 review)
 - [ ] Ramp monotonicity test (spec §12)
