@@ -9,6 +9,9 @@ export interface Effects {
   pushTrail(pos: Vec, active: boolean): void
   burst(pos: Vec, color: number): void
   update(dt: number): void
+  // clears trail + burst buffers — a fast restart must not carry visual remnants from
+  // the previous run into the new one (documented gap, Task 20 review; final review)
+  reset(): void
 }
 
 export function createEffects(scene: THREE.Scene): Effects {
@@ -76,6 +79,17 @@ export function createEffects(scene: THREE.Scene): Effects {
         burstMat.opacity = Math.max(0, burstLife / 0.6)
         burstGeo.attributes['position']!.needsUpdate = true
       }
+    },
+    reset() {
+      trailPos.fill(0)
+      trailCol.fill(0)
+      trailGeo.attributes['position']!.needsUpdate = true
+      trailGeo.attributes['color']!.needsUpdate = true
+      head = 0
+      burstPos.fill(0)
+      burstLife = 0
+      burstMat.opacity = 0
+      burstGeo.attributes['position']!.needsUpdate = true
     },
   }
 }
