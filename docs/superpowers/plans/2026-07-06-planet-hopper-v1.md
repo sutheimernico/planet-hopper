@@ -3323,3 +3323,39 @@ Consciously NOT in the tasks above, so v1 converges; each is a small standalone 
 - Ambient synth pad (spec §7) — SFX ship first; pad needs volume balancing on real speakers.
 
 
+
+---
+
+## Outcome (2026-07-12, autonomous loop session 2026-07-10 → 2026-07-12)
+
+**Result:** v1 code-complete. Tasks 10–23 plus Task 24 (spec-gap closure from the final
+cross-review) implemented on `autopilot/work` via subagent-driven development (Sonnet workers,
+implementer → spec review → quality review per task). Gate green at every commit: final state
+**80 tests / 15 files, typecheck + eslint clean, bundle 145.40 kB gzip** (budget 500 kB), dev
+FPS overlay tree-shaken from prod, GitHub Pages workflow committed (inert until a remote exists).
+
+**Deviations from the original plan text (all via dated amendment commits, plan ↔ code kept
+byte-consistent):**
+- `15a2367` OutputPass added to the composer chain (phase-2 SOTA check; r152+ color management).
+- `eb64498`/`002bf61` planet mesh disposal on prune/reset + allocation-free sync (task 16 review).
+- `4c7f19e`/`c670d41` preallocated preview-line buffers (+`frustumCulled=false`) and
+  pointer-identity guard (task 17 review).
+- `e5b8c61`/`570a3cf` pause-gated aim, full gesture reset on restart, SimEvent payload
+  passed to handleEvent (task 19 review).
+- `5830df5`/`9944265` launch event dispatched immediately after `launch()` — pre-existing bug,
+  the event was discarded before the frame loop ever read it (task 20 implementer self-find).
+- `e6a0414`/`061b125` per-frame world upkeep, aim-preview throttled to frame rate, hoisted HUD
+  number formatter (task 21 performance pass; sanctioned review findings).
+- `99916ce` prune tests rewritten to value copies — the originals were tautological against the
+  live-reference snapshot; mutation-checked (task 21 review, proven by reviewer's mutation).
+- `93aee0e` deploy workflow actions bumped to Node24-ready majors (Node20 runner EOL Sept 2026).
+- `11890d2`…`1b126f8` Task 24: capture-radius ring (spec §3), touch pause button (spec §6),
+  `effects.reset()` on restart, ramp-monotonicity test (spec §12), bookkeeping (§10/§11).
+
+**Process note:** small verbatim tasks received a combined two-stage review (spec then quality
+in one agent); substantial tasks (12, 19) kept fully separate reviewers. One session-limit
+interruption (prune-test fix) was completed inline by the orchestrator, mutation-check included.
+
+**Open (tracked in PLAN.md):** "Needs Nico live verify" list (visuals, audio, game-feel, fps on
+real GPU — agents were headless throughout and never claimed visual results), remote/visibility
+decision, name confirmation, deferred-polish v1.1 candidates. Merge to `main` stays Nico's call.
