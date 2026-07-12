@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+import { decorateSceneForTheme } from './theme-prototype'
 import type { Vec } from '../core/vec'
 
 const BASE_FOV = 55
@@ -44,10 +45,14 @@ export function createSceneRig(canvas: HTMLCanvasElement): SceneRig {
 
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.85, 0.55, 0.8))
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.85, 0.55, 0.8)
+  composer.addPass(bloom)
   // r152+ color management: without a final OutputPass the composer blits a linear-space
   // buffer to the canvas — no sRGB encode, colors render too dark (SOTA check, Phase 2 boundary)
   composer.addPass(new OutputPass())
+
+  // PROTOTYPE HOOK (dev-only, tree-shaken in prod) — remove with theme-prototype.ts
+  if (import.meta.env.DEV) decorateSceneForTheme(scene, bloom)
 
   let shake = 0
   let fov = BASE_FOV
