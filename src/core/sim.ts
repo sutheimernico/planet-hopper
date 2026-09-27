@@ -33,6 +33,9 @@ export interface RunState {
   voidTimer: number
   strandedTimer: number
   flybyTracking: readonly number[] // planet ids the ship is currently inside the flyby band of
+  // launch planet: no flyby credit for simply flying out of its band — only once the ship
+  // has left the band can a swing back past it count (spec: flyby = passing a planet)
+  flybyExcludeId: number | null
   deathCause: DeathCause | null
   events: readonly SimEvent[] // this tick's discrete happenings; replaced every tick
 }
@@ -51,6 +54,7 @@ export function newRun(world: WorldSnapshot): RunState {
     voidTimer: 0,
     strandedTimer: 0,
     flybyTracking: [],
+    flybyExcludeId: null,
     deathCause: null,
     events: [],
   }
@@ -68,6 +72,7 @@ export function launch(s: RunState, world: WorldSnapshot, aimDir: Vec, power01: 
     ship: { pos: orbitPosition(planet, s.orbit), vel: launchVelocity(aimDir, power01) },
     orbit: null,
     ignorePlanetId: planet.id,
+    flybyExcludeId: planet.id,
     fuel: s.fuel - cost,
     events: [{ type: 'launch' }],
   }
@@ -110,6 +115,12 @@ export function tickRun(s: RunState, world: WorldSnapshot, dt: number = DT): Run
     if (!lp || dist(ship.pos, lp.pos) > captureRadius(lp)) ignore = null
   }
 
+  let exclude = s.flybyExcludeId
+  if (exclude !== null) {
+    const lp = world.planets.find((p) => p.id === exclude)
+    if (!lp || dist(ship.pos, lp.pos) > lp.radius * FLYBY_FACTOR) exclude = null
+  }
+
   for (const sun of world.suns) {
     if (dist(ship.pos, sun.pos) <= sun.radius) return die({ ...s, ship }, 'sun', events)
   }
@@ -128,7 +139,7 @@ export function tickRun(s: RunState, world: WorldSnapshot, dt: number = DT): Run
   // flyby band tracking: entered band → tracked; exited outward without capture → flyby
   const tracking = new Set(s.flybyTracking)
   for (const p of world.planets) {
-    if (p.id === ignore) continue
+    if (p.id === ignore || p.id === exclude) continue
     const d = dist(ship.pos, p.pos)
     const inBand = d > captureRadius(p) && d <= p.radius * FLYBY_FACTOR
     if (inBand) {
@@ -150,6 +161,7 @@ export function tickRun(s: RunState, world: WorldSnapshot, dt: number = DT): Run
       orbit: enterOrbit(captured, ship.pos, ship.vel),
       ship: { pos: ship.pos, vel: { x: 0, y: 0 } },
       ignorePlanetId: null,
+      flybyExcludeId: null,
       fuel,
       score,
       voidTimer: 0,
@@ -162,7 +174,7 @@ export function tickRun(s: RunState, world: WorldSnapshot, dt: number = DT): Run
   for (const p of world.planets) nearestPlanet = Math.min(nearestPlanet, dist(ship.pos, p.pos))
   const voidTimer = nearestPlanet > VOID_DISTANCE ? s.voidTimer + dt : 0
   const next: RunState = {
-    ...s, ship, ignorePlanetId: ignore, fuel, score, voidTimer,
+    ...s, ship, ignorePlanetId: ignore, flybyExcludeId: exclude, fuel, score, voidTimer,
     flybyTracking: [...tracking], events,
   }
   if (voidTimer >= VOID_GRACE) return die(next, 'void', events)

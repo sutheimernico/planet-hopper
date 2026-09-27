@@ -110,6 +110,26 @@ describe('sim', () => {
     expect(s.score.mult).toBeGreaterThan(1)
     expect(s.events).toEqual([]) // events drained per tick; flyby already consumed
   })
+  it('leaving the launch planet is not a flyby of it (found in the first headless run)', () => {
+    const world = twoPlanets()
+    let s = launch(newRun(world), world, vec(-1, 0), 1) // straight away from planet 2
+    const types: string[] = []
+    for (let i = 0; i < Math.round(1 / DT); i++) {
+      s = tickRun(s, world, DT)
+      types.push(...s.events.map((e) => e.type))
+    }
+    expect(types).not.toContain('flyby')
+    expect(s.score.mult).toBe(1)
+  })
+  it('the launch planet earns flyby credit again once the ship has left its band', () => {
+    const world = twoPlanets()
+    const launched = launch(newRun(world), world, vec(-1, 0), 1)
+    // hand-placed: already far outside planet 1's band, heading for a tangential pass
+    let s: RunState = { ...launched, ship: { pos: vec(-60, 15), vel: vec(120, 0) } }
+    s = run(s, world, 0.1) // leaves nothing to exclude: > band radius from planet 1
+    s = run(s, world, 1)
+    expect(s.score.mult).toBeGreaterThan(1)
+  })
   it('crystal refuel caps at FUEL_MAX', () => {
     const crystal = { id: 99, pos: vec(25, 0), collected: false }
     const w: WorldSnapshot = { ...twoPlanets(), crystals: [crystal] }
