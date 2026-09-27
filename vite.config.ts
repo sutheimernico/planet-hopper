@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite'
 
 // Relative base → works on GitHub Pages project sites without knowing the repo name.
+// BASE_PATH overrides it for hosts that need an absolute base, e.g.
+// `BASE_PATH=/planet-hopper/ npm run build`.
 export default defineConfig({
-  base: './',
+  base: process.env['BASE_PATH'] ?? './',
   build: {
     rolldownOptions: {
       output: {
