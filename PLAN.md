@@ -112,8 +112,9 @@ is a small standalone iteration.
 - Git remote / public-visibility decision before any first push.
 - Game-feel + visual sign-off on a real GPU/display; fps verification on a real laptop.
 - Name confirmation ("Planet Hopper" is the working title).
-- Pre-go-live check of `.github/workflows/deploy.yml` action pins: checkout/setup-node already
-  bumped to Node24-ready majors (v5/v6, 2026-07-11); `upload-pages-artifact@v3`/`deploy-pages@v4`
-  had no newer major then — re-verify if the remote is created after Sept 2026 (Node20 runtime EOL).
+- `.github/workflows/deploy.yml` action pins bumped 2026-09-27 to the then-latest majors
+  (checkout v7, setup-node v7 with Node 24, upload-pages-artifact v5, deploy-pages v5 —
+  the v3/v4 pair was the Node20 generation); release notes show no breaking change for
+  this workflow, but it has never run — the first push to `main` on a remote is its test.
 - WebGL-fallback message (`src/main.ts`) should link to the repo (spec §11) once a public
   remote exists — inert until then, same dependency as the git-remote decision above.
