@@ -219,7 +219,7 @@ function boot(root: HTMLDivElement): void {
       showPause: phase === 'playing',
     })
     rig.render()
-    devHud?.(performance.now() - now)
+    devHud?.(now, performance.now() - now)
     requestAnimationFrame(frame)
   }
 
