@@ -1,9 +1,15 @@
 // src/core/session.ts
+import { DT, PREVIEW_SAMPLE_EVERY, PREVIEW_SECONDS } from './constants'
 import { createAccumulator } from './loop'
 import { createRunDriver, type RunDriver } from './run-driver'
 import type { SimEvent } from './sim'
 import { transition, type GameEvent, type GamePhase } from './state'
+import type { Vec } from './vec'
 import type { Aim } from '../input/aim'
+import { launchVelocity } from '../physics/orbit'
+import { simulateTrajectory } from '../physics/trajectory'
+
+const PREVIEW_STEPS = Math.round(PREVIEW_SECONDS / DT)
 
 // Input → simulation wiring without DOM or Three.js: game phase, the held aim gesture,
 // the fixed-timestep accumulator and one queue that collects every sim event — tick events
@@ -12,6 +18,10 @@ export interface Session {
   phase(): GamePhase
   driver(): RunDriver
   heldAim(): Aim | null // non-null only while a drag is in progress during 'playing'
+  // Trajectory for the held aim from the ship's CURRENT orbit position (null when not
+  // aiming). Runs 360 fixed steps — call once per rendered frame, not per pointer event;
+  // recomputed every frame because the ship keeps orbiting while the pointer rests.
+  previewPath(): readonly Vec[] | null
   alpha(): number // render interpolation factor
   send(event: GameEvent): void
   resetRun(seed: number): void // fresh run on a new world; the 'session' lifecycle entry
@@ -53,6 +63,15 @@ export function createSession(seed: number, onPhase: (phase: GamePhase) => void)
     phase: () => phase,
     driver: () => driver,
     heldAim: () => held,
+    previewPath() {
+      const run = driver.state()
+      if (!held || run.mode !== 'orbiting' || !run.orbit) return null
+      // launchVelocity + simulateTrajectory — the live physics, no duplicate (spec: no fake preview)
+      return simulateTrajectory(
+        { pos: run.ship.pos, vel: launchVelocity(held.dir, held.power01) },
+        driver.world().snapshot(), run.orbit.planetId, PREVIEW_STEPS, PREVIEW_SAMPLE_EVERY,
+      ).points
+    },
     alpha: () => acc.alpha(),
     send,
     resetRun(nextSeed) {

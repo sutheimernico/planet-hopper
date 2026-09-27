@@ -8,8 +8,6 @@ import type { GamePhase } from './core/state'
 import { createStorage } from './core/storage'
 import { len } from './core/vec'
 import { attachControls } from './input/controls'
-import { launchVelocity } from './physics/orbit'
-import { simulateTrajectory } from './physics/trajectory'
 import { attachDevHud } from './render/devhud'
 import { createEffects } from './render/effects'
 import { createEntityPools } from './render/meshes'
@@ -128,21 +126,9 @@ function boot(root: HTMLDivElement): void {
     const run = driver.state()
     const world = driver.world().snapshot()
 
-    // simulateTrajectory runs 360 fixed steps — recompute the preview at most once per
-    // rendered frame instead of on every raw pointermove (review finding, Task 19 review #5).
-    // The held aim is NOT consumed: the ship keeps orbiting while the pointer rests, so a
-    // preview computed only on pointermove drifts away from the real launch point
-    // (found in the first headless render, 2026-09-27).
-    const aim = session.heldAim()
-    if (aim && run.mode === 'orbiting' && run.orbit) {
-      // preview uses launchVelocity + simulateTrajectory — the live physics, no duplicate
-      const t = simulateTrajectory(
-        { pos: run.ship.pos, vel: launchVelocity(aim.dir, aim.power01) },
-        world, run.orbit.planetId,
-        Math.round(C.PREVIEW_SECONDS / C.DT), C.PREVIEW_SAMPLE_EVERY,
-      )
-      preview.show(t.points)
-    } else preview.hide()
+    const path = session.previewPath()
+    if (path) preview.show(path)
+    else preview.hide()
 
     const alpha = session.alpha()
     const prevShipPos = driver.prevShipPos()
@@ -164,7 +150,7 @@ function boot(root: HTMLDivElement): void {
       fuel01: run.fuel / C.FUEL_MAX,
       points: run.score.points,
       mult: run.score.mult,
-      hint: phase === 'playing' && run.mode === 'orbiting' && !aim
+      hint: phase === 'playing' && run.mode === 'orbiting' && !session.heldAim()
         ? 'Ziehen zum Zielen · loslassen zum Starten' : null,
       warning: run.voidTimer > 0
         ? `Zurück zum Korridor! ${(C.VOID_GRACE - run.voidTimer).toFixed(1)} s` : null,
