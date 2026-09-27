@@ -1,6 +1,7 @@
 // src/main.ts
 import { createSfx } from './audio/sfx'
 import * as C from './core/constants'
+import { dailySeed, isDailySeed, parseSeed, seedLabel, seedToNumber, shareText } from './core/daily'
 import { createRunLifecycle } from './core/run-lifecycle'
 import { createSession } from './core/session'
 import type { SimEvent } from './core/sim'
@@ -61,7 +62,11 @@ function boot(root: HTMLDivElement): void {
   const devHud = import.meta.env.DEV ? attachDevHud(root) : null
 
   const randomSeed = (): number => Date.now() % 2 ** 31
-  let nextSeed = randomSeed()
+  // a valid ?seed= link replaces the endless random world; the daily button uses today's date
+  const urlSeed = parseSeed(new URLSearchParams(location.search).get('seed'))
+  const pageUrl = location.origin + location.pathname
+  let runSeed: string | null = urlSeed // null = endless run on a random world
+  let nextSeed = urlSeed !== null ? seedToNumber(urlSeed) : randomSeed()
   const session = createSession(nextSeed, showPhase)
   const lifecycle = createRunLifecycle({
     session: () => session.resetRun(nextSeed),
@@ -69,33 +74,54 @@ function boot(root: HTMLDivElement): void {
     effects: () => effects.reset(),
   })
 
+  const startRun = (seed: string | null, event: 'start' | 'restart'): void => {
+    runSeed = seed
+    nextSeed = seed !== null ? seedToNumber(seed) : randomSeed()
+    lifecycle.resetRun()
+    session.send(event)
+  }
+
   const screens = createScreens(root, {
-    onStart: () => session.send('start'),
+    onStart: () => startRun(urlSeed, 'start'),
+    onDaily: () => startRun(dailySeed(new Date()), 'start'),
     onResume: () => session.send('resume'),
-    onRestart: () => {
-      nextSeed = randomSeed()
-      lifecycle.resetRun()
-      session.send('restart')
-    },
+    onRestart: () => startRun(runSeed, 'restart'), // same mode: same seed or a new random one
+    onMenu: () => session.send('menu'),
+  })
+
+  const showStart = (): void => screens.showStart({
+    highscore: storage.getHighscore(),
+    seedLabel: urlSeed !== null ? seedLabel(urlSeed) : null,
+    dailyBest: storage.getSeedBest(dailySeed(new Date())),
   })
 
   function showPhase(phase: GamePhase): void {
-    if (phase === 'menu') screens.showStart(storage.getHighscore())
+    if (phase === 'menu') showStart()
     else if (phase === 'paused') screens.showPause()
-    else if (phase === 'gameover') {
-      const run = session.driver().state()
-      const points = Math.floor(run.score.points)
-      const high = storage.getHighscore()
-      const isNew = points > high
-      if (isNew) storage.setHighscore(points)
-      screens.showGameOver({
-        points, crystals: run.score.crystals,
-        highscore: Math.max(points, high), isNewHighscore: isNew,
-        cause: run.deathCause ?? 'void',
-      })
-    } else screens.hide()
+    else if (phase === 'gameover') showGameOver()
+    else screens.hide()
   }
-  screens.showStart(storage.getHighscore())
+
+  function showGameOver(): void {
+    const run = session.driver().state()
+    const points = Math.floor(run.score.points)
+    const seed = runSeed
+    const best = seed === null ? storage.getHighscore() : storage.getSeedBest(seed)
+    const isNewBest = points > best
+    if (isNewBest) {
+      if (seed === null) storage.setHighscore(points)
+      else storage.setSeedBest(seed, points)
+    }
+    screens.showGameOver({
+      points, crystals: run.score.crystals,
+      best: Math.max(points, best), isNewBest,
+      bestLabel: seed === null ? 'Rekord' : isDailySeed(seed) ? 'Tagesrekord' : 'Seed-Rekord',
+      runLabel: seed !== null ? seedLabel(seed) : null,
+      shareText: seed !== null ? shareText(seed, points, pageUrl) : null,
+      cause: run.deathCause ?? 'void',
+    })
+  }
+  showStart()
 
   attachControls(canvas, {
     canAim: () => session.canAim(),

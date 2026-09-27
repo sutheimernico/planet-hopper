@@ -51,3 +51,11 @@ html, body { height: 100%; overflow: hidden; background: #05060f; }
   border: none; border-radius: 99px; padding: 12px 44px;
   box-shadow: 0 0 24px rgba(34, 211, 238, .5); }
 .screen-btn:hover { filter: brightness(1.1); }
+.screen-btn-alt { color: #67e8f9; background: rgba(10, 14, 28, .6);
+  border: 1px solid rgba(103, 232, 249, .5); box-shadow: none; padding: 10px 32px; font-size: 16px; }
+.screen-note { color: #94a3b8; font-size: 14px; }
+.screen-link { pointer-events: auto; cursor: pointer; background: none; border: none;
+  color: #94a3b8; font-size: 14px; text-decoration: underline; }
+.screen-share { width: min(34em, 90vw); height: 5em; resize: none; padding: 8px;
+  color: #e2e8f0; background: rgba(10, 14, 28, .8); border: 1px solid rgba(103, 232, 249, .3);
+  border-radius: 8px; font: 13px ui-monospace, monospace; }
