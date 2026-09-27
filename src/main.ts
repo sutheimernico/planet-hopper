@@ -94,6 +94,7 @@ function boot(root: HTMLDivElement): void {
   })
 
   const startRun = (seed: string | null, event: 'start' | 'restart'): void => {
+    sfx.startPad() // runs inside the button's click → allowed by the autoplay policy
     runSeed = seed
     nextSeed = seed !== null ? seedToNumber(seed) : randomSeed()
     lifecycle.resetRun()
@@ -244,7 +245,7 @@ function boot(root: HTMLDivElement): void {
       case 'launch': rig.fovKick(); sfx.launch(); break
       case 'capture': rig.addShake(1.6); effects.burst(pos, 0x67e8f9); sfx.capture(); break
       case 'crystal': effects.burst(pos, 0x22d3ee); sfx.crystal(); break
-      case 'flyby': sfx.flyby(); break
+      case 'flyby': sfx.flyby(len(session.driver().state().ship.vel)); break
       case 'death': rig.addShake(2.5); effects.burst(pos, 0xf87171); sfx.death(); break
     }
   }
