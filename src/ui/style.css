@@ -59,3 +59,9 @@ html, body { height: 100%; overflow: hidden; background: #05060f; }
 .screen-share { width: min(34em, 90vw); height: 5em; resize: none; padding: 8px;
   color: #e2e8f0; background: rgba(10, 14, 28, .8); border: 1px solid rgba(103, 232, 249, .3);
   border-radius: 8px; font: 13px ui-monospace, monospace; }
+
+.toast { position: fixed; top: 26%; left: 50%; transform: translate(-50%, -8px);
+  pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s;
+  color: #fbbf24; font-size: 20px; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+  text-shadow: 0 0 14px rgba(251, 191, 36, .8); }
+.toast-visible { opacity: 1; transform: translate(-50%, 0); }

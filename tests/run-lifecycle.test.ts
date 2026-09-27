@@ -6,7 +6,7 @@ const recordingHandlers = (calls: string[]): Record<RunResettable, () => void> =
 
 describe('run lifecycle registry', () => {
   it('enumerates every per-run stateful subsystem (update this list with a reset handler)', () => {
-    expect(RUN_RESETTABLES).toEqual(['session', 'ghost', 'pools', 'effects'])
+    expect(RUN_RESETTABLES).toEqual(['session', 'ghost', 'milestones', 'pools', 'effects'])
   })
   it('resets every registered subsystem exactly once, in registry order', () => {
     const calls: string[] = []

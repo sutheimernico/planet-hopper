@@ -2,6 +2,7 @@
 import { createSfx } from './audio/sfx'
 import * as C from './core/constants'
 import { dailySeed, isDailySeed, parseSeed, seedLabel, seedToNumber, shareText } from './core/daily'
+import { createMilestones } from './core/milestones'
 import { createRecording, createReplay, parseRecording, type Replay } from './core/replay'
 import type { RunDriver } from './core/run-driver'
 import { createRunLifecycle } from './core/run-lifecycle'
@@ -19,6 +20,7 @@ import { createPreviewLine } from './render/preview'
 import { createSceneRig } from './render/scene'
 import { createHud } from './ui/hud'
 import { createScreens } from './ui/screens'
+import { createToasts } from './ui/toast'
 import './ui/style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')
@@ -63,6 +65,8 @@ function boot(root: HTMLDivElement): void {
     // touch-friendly equivalent of Esc — same 'pause' transition (spec §6, final review)
     onPause: () => session.send('pause'),
   })
+  const toasts = createToasts(root)
+  const milestones = createMilestones()
   const devHud = import.meta.env.DEV ? attachDevHud(root) : null
 
   const randomSeed = (): number => Date.now() % 2 ** 31
@@ -84,6 +88,7 @@ function boot(root: HTMLDivElement): void {
   const lifecycle = createRunLifecycle({
     session: () => session.resetRun(nextSeed),
     ghost: () => { ghost = loadGhost(runSeed) },
+    milestones: () => { milestones.reset(); toasts.clear() },
     pools: () => pools.reset(),
     effects: () => effects.reset(),
   })
@@ -173,6 +178,11 @@ function boot(root: HTMLDivElement): void {
     const ticks = session.advance(elapsed)
     ghost?.advance(ticks)
     session.drain(handleEvent)
+    if (ticks > 0) {
+      const m = milestones.check(session.driver().state().score)
+      if (m) toasts.show(m.text)
+    }
+    toasts.update(elapsed)
 
     const driver = session.driver()
     const run = driver.state()
