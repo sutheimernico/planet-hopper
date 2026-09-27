@@ -51,6 +51,20 @@ describe('seed records', () => {
     expect(s.getSeedBest('s0')).toBe(0) // evicted
     expect(s.getSeedBest(`s${SEED_SLOTS}`)).toBe(SEED_SLOTS + 1)
   })
+  it('keeps the best run\'s ghost with its seed and drops it on a ghost-less new best', () => {
+    const s = createStorage(memBackend())
+    expect(s.getSeedGhost('abc')).toBeNull()
+    s.setSeedBest('abc', 100, { v: 1, launches: [] })
+    expect(s.getSeedGhost('abc')).toEqual({ v: 1, launches: [] })
+    s.setSeedBest('abc', 200) // e.g. > MAX_RECORDED_LAUNCHES
+    expect(s.getSeedGhost('abc')).toBeNull()
+  })
+  it('persists the ghost toggle, default on', () => {
+    const s = createStorage(memBackend())
+    expect(s.getGhostEnabled()).toBe(true)
+    s.setGhostEnabled(false)
+    expect(s.getGhostEnabled()).toBe(false)
+  })
   it('treats corrupt seed JSON as no records', () => {
     const b = memBackend()
     b.mem.set('planet-hopper.seeds', '{not json')

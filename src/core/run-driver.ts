@@ -1,5 +1,6 @@
 // src/core/run-driver.ts
 import { DT, GENERATE_AHEAD, PRUNE_BEHIND } from './constants'
+import type { LaunchInput } from './replay'
 import { launch, newRun, tickRun, type RunState, type SimEvent } from './sim'
 import type { Vec } from './vec'
 import { createWorld, type World } from '../world/generator'
@@ -17,6 +18,9 @@ export interface RunDriver {
   // the caller must forward them (historical "launch event dropped" bug, Task 20 review).
   launch(dir: Vec, power01: number): readonly SimEvent[]
   step(): readonly SimEvent[] // one fixed tick; returns this tick's events
+  // every accepted launch with the tick it happened before — with the seed, this is the
+  // complete input of the run (the ghost replay needs nothing else)
+  launches(): readonly LaunchInput[]
 }
 
 export function createRunDriver(seed: number): RunDriver {
@@ -25,6 +29,7 @@ export function createRunDriver(seed: number): RunDriver {
   let run = newRun(world.snapshot())
   let prev = run.ship.pos
   let ticks = 0
+  const inputs: LaunchInput[] = []
 
   return {
     seed,
@@ -36,6 +41,7 @@ export function createRunDriver(seed: number): RunDriver {
       const next = launch(run, world.snapshot(), dir, power01)
       if (next === run) return [] // launch() returns its input unchanged when rejected
       run = next
+      inputs.push({ t: ticks, x: dir.x, y: dir.y, p: power01 })
       return run.events
     },
     step() {
@@ -49,5 +55,6 @@ export function createRunDriver(seed: number): RunDriver {
       world.prune(run.ship.pos.x - PRUNE_BEHIND)
       return run.events
     },
+    launches: () => inputs,
   }
 }

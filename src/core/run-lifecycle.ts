@@ -5,6 +5,7 @@
 // and createRunLifecycle refuses handlers for names that are not listed.
 export const RUN_RESETTABLES = [
   'session', // sim run, world, gesture, accumulator, event queue
+  'ghost', // replay of the seed's best run (reads the new run's seed)
   'pools', // pooled meshes keyed by entity id — a new world reuses ids
   'effects', // trail + burst particle buffers
 ] as const

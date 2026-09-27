@@ -18,7 +18,7 @@ export interface RunStats {
 
 export interface Screens {
   showStart(view: StartView): void
-  showPause(): void
+  showPause(ghostOn: boolean | null): void // null: no ghost for this run → no toggle
   showGameOver(stats: RunStats): void
   hide(): void
 }
@@ -27,6 +27,7 @@ export interface ScreenActions {
   onStart(): void
   onDaily(): void
   onResume(): void
+  onToggleGhost(): boolean // returns the new state
   onRestart(): void
   onMenu(): void
 }
@@ -36,6 +37,8 @@ const CAUSE_TEXT: Record<RunStats['cause'], string> = {
   void: 'In der Leere verloren',
   stranded: 'Ohne Treibstoff gestrandet',
 }
+
+const ghostLabel = (on: boolean): string => `Geist: ${on ? 'an' : 'aus'}`
 
 const fmt = (n: number): string => new Intl.NumberFormat('de-DE').format(Math.floor(n))
 
@@ -73,6 +76,7 @@ export function createScreens(root: HTMLElement, actions: ScreenActions): Screen
     if (action === 'start') actions.onStart()
     if (action === 'daily') actions.onDaily()
     if (action === 'resume') actions.onResume()
+    if (action === 'ghost') target.textContent = ghostLabel(actions.onToggleGhost())
     if (action === 'restart') actions.onRestart()
     if (action === 'menu') actions.onMenu()
     if (action === 'share') void doShare(target)
@@ -90,10 +94,13 @@ export function createScreens(root: HTMLElement, actions: ScreenActions): Screen
         <button class="screen-btn screen-btn-alt" data-action="daily">Tages-Challenge</button>
         ${v.dailyBest > 0 ? `<p class="screen-note">Heute bisher: ${fmt(v.dailyBest)} Punkte</p>` : ''}`)
     },
-    showPause() {
+    showPause(ghostOn) {
       render(`
         <h1>Pause</h1>
-        <button class="screen-btn" data-action="resume">Weiter</button>`)
+        <button class="screen-btn" data-action="resume">Weiter</button>
+        ${ghostOn !== null
+          ? `<button class="screen-btn screen-btn-alt" data-action="ghost">${ghostLabel(ghostOn)}</button>`
+          : ''}`)
     },
     showGameOver(s) {
       share = s.shareText

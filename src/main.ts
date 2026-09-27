@@ -2,15 +2,18 @@
 import { createSfx } from './audio/sfx'
 import * as C from './core/constants'
 import { dailySeed, isDailySeed, parseSeed, seedLabel, seedToNumber, shareText } from './core/daily'
+import { createRecording, createReplay, parseRecording, type Replay } from './core/replay'
+import type { RunDriver } from './core/run-driver'
 import { createRunLifecycle } from './core/run-lifecycle'
 import { createSession } from './core/session'
 import type { SimEvent } from './core/sim'
 import type { GamePhase } from './core/state'
 import { createStorage } from './core/storage'
-import { len } from './core/vec'
+import { len, type Vec } from './core/vec'
 import { attachControls } from './input/controls'
 import { attachDevHud } from './render/devhud'
 import { createEffects } from './render/effects'
+import { createGhostShip } from './render/ghost'
 import { createEntityPools } from './render/meshes'
 import { createPreviewLine } from './render/preview'
 import { createSceneRig } from './render/scene'
@@ -47,6 +50,7 @@ function boot(root: HTMLDivElement): void {
   const pools = createEntityPools(rig.scene)
   const preview = createPreviewLine(rig.scene)
   const effects = createEffects(rig.scene)
+  const ghostShip = createGhostShip(rig.scene)
   const storage = createStorage(window.localStorage)
   const sfx = createSfx(storage.getMuted())
   const hud = createHud(root, {
@@ -68,8 +72,18 @@ function boot(root: HTMLDivElement): void {
   let runSeed: string | null = urlSeed // null = endless run on a random world
   let nextSeed = urlSeed !== null ? seedToNumber(urlSeed) : randomSeed()
   const session = createSession(nextSeed, showPhase)
+  // Ghost = best recorded run on this exact seed (daily / ?seed= only — a random endless
+  // world is never replayed, so a ghost there would fly through planets that don't exist)
+  let ghost: Replay | null = null
+  let ghostEnabled = storage.getGhostEnabled()
+  const loadGhost = (seed: string | null): Replay | null => {
+    if (seed === null) return null
+    const rec = parseRecording(storage.getSeedGhost(seed), seedToNumber(seed))
+    return rec ? createReplay(rec) : null
+  }
   const lifecycle = createRunLifecycle({
     session: () => session.resetRun(nextSeed),
+    ghost: () => { ghost = loadGhost(runSeed) },
     pools: () => pools.reset(),
     effects: () => effects.reset(),
   })
@@ -85,6 +99,11 @@ function boot(root: HTMLDivElement): void {
     onStart: () => startRun(urlSeed, 'start'),
     onDaily: () => startRun(dailySeed(new Date()), 'start'),
     onResume: () => session.send('resume'),
+    onToggleGhost: () => {
+      ghostEnabled = !ghostEnabled
+      storage.setGhostEnabled(ghostEnabled)
+      return ghostEnabled
+    },
     onRestart: () => startRun(runSeed, 'restart'), // same mode: same seed or a new random one
     onMenu: () => session.send('menu'),
   })
@@ -97,7 +116,7 @@ function boot(root: HTMLDivElement): void {
 
   function showPhase(phase: GamePhase): void {
     if (phase === 'menu') showStart()
-    else if (phase === 'paused') screens.showPause()
+    else if (phase === 'paused') screens.showPause(ghost ? ghostEnabled : null)
     else if (phase === 'gameover') showGameOver()
     else screens.hide()
   }
@@ -110,7 +129,10 @@ function boot(root: HTMLDivElement): void {
     const isNewBest = points > best
     if (isNewBest) {
       if (seed === null) storage.setHighscore(points)
-      else storage.setSeedBest(seed, points)
+      else {
+        const d = session.driver()
+        storage.setSeedBest(seed, points, createRecording(d.seed, points, d.launches()) ?? undefined)
+      }
     }
     screens.showGameOver({
       points, crystals: run.score.crystals,
@@ -145,7 +167,11 @@ function boot(root: HTMLDivElement): void {
     const elapsed = Math.min(0.25, (now - last) / 1000)
     last = now
 
-    session.advance(elapsed)
+    // lockstep: the ghost runs exactly the live ticks. Not `ghost?.advance(session.advance(…))`
+    // — optional chaining skips evaluating the arguments when there is no ghost, which froze
+    // the sim (caught by the headless run, 2026-09-27)
+    const ticks = session.advance(elapsed)
+    ghost?.advance(ticks)
     session.drain(handleEvent)
 
     const driver = session.driver()
@@ -157,14 +183,12 @@ function boot(root: HTMLDivElement): void {
     else preview.hide()
 
     const alpha = session.alpha()
-    const prevShipPos = driver.prevShipPos()
-    const shipPos = {
-      x: prevShipPos.x + (run.ship.pos.x - prevShipPos.x) * alpha,
-      y: prevShipPos.y + (run.ship.pos.y - prevShipPos.y) * alpha,
-    }
-    const speed = len(run.ship.vel)
-    const velAngle = speed > 0.1 ? Math.atan2(run.ship.vel.y, run.ship.vel.x)
-      : (run.orbit ? run.orbit.angle + (run.orbit.dir * Math.PI) / 2 : 0)
+    const { pos: shipPos, angle: velAngle, speed } = pose(driver, alpha)
+    const g = ghost?.driver()
+    if (g && ghostEnabled && g.state().mode !== 'dead') {
+      const gp = pose(g, alpha)
+      ghostShip.update(gp.pos, gp.angle)
+    } else ghostShip.update(null, 0)
 
     const phase = session.phase()
     pools.sync(world)
@@ -186,6 +210,20 @@ function boot(root: HTMLDivElement): void {
     rig.render()
     devHud?.(performance.now() - now)
     requestAnimationFrame(frame)
+  }
+
+  // interpolated render pose of a run (live ship or ghost) between its last two ticks
+  function pose(d: RunDriver, alpha: number): { pos: Vec; angle: number; speed: number } {
+    const run = d.state()
+    const prev = d.prevShipPos()
+    const pos = {
+      x: prev.x + (run.ship.pos.x - prev.x) * alpha,
+      y: prev.y + (run.ship.pos.y - prev.y) * alpha,
+    }
+    const speed = len(run.ship.vel)
+    const angle = speed > 0.1 ? Math.atan2(run.ship.vel.y, run.ship.vel.x)
+      : (run.orbit ? run.orbit.angle + (run.orbit.dir * Math.PI) / 2 : 0)
+    return { pos, angle, speed }
   }
 
   // takes the full SimEvent, not just the type — Task 20's audio hooks need the
