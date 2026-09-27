@@ -4,7 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
-import { decorateSceneForTheme } from './theme-prototype'
+import { decorateSceneForTheme } from './theme-prototype' // THEME PROTOTYPE — see fence below
 import type { Vec } from '../core/vec'
 
 const BASE_FOV = 55
@@ -51,8 +51,12 @@ export function createSceneRig(canvas: HTMLCanvasElement): SceneRig {
   // buffer to the canvas — no sRGB encode, colors render too dark (SOTA check, Phase 2 boundary)
   composer.addPass(new OutputPass())
 
-  // PROTOTYPE HOOK (dev-only, tree-shaken in prod) — remove with theme-prototype.ts
+  // ─── BEGIN THEME PROTOTYPE HOOK (dev-only, tree-shaken from prod — verified 2026-09-27) ───
+  // Open decision: Nico picks A–D via `npm run dev` + `?variant=`. Removal: fold the winner's
+  // backdrop/bloom into this file, delete these lines + the import above, the hook in
+  // meshes.ts and src/render/theme-prototype.ts (plan 2026-07-21, Task 10 branch 1).
   if (import.meta.env.DEV) decorateSceneForTheme(scene, bloom)
+  // ─── END THEME PROTOTYPE HOOK ───
 
   let shake = 0
   let fov = BASE_FOV

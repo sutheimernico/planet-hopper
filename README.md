@@ -12,6 +12,13 @@ production build clean (145 kB gzip). Verified so far via automated gate/build/
 headless smoke only — no real browser/GPU session yet. Needs Nico: live game-feel/
 fps verify, git remote + public-visibility decision, name confirmation.
 
+> **Offene Entscheidung: Theme A–D** — `npm run dev`, dann `http://localhost:5173/?variant=A`
+> (bzw. `B`, `C`, `D`; Pfeile unten wechseln). Die vier Looks sind ein Dev-only-Prototyp
+> (`src/render/theme-prototype.ts`, aus dem Prod-Build tree-shaken). Übersicht als
+> Orientierung (SwiftShader-Software-Rendering, kein GPU-Urteil):
+> `docs/screenshots/theme-variants.jpg`. Nach der Wahl: Gewinner in `meshes.ts`/`scene.ts`
+> einfalten, Prototyp + beide `THEME PROTOTYPE HOOK`-Blöcke löschen.
+
 ## Honest framing
 - Everything is rendered live in the browser; no prerendered footage or assets.
 - Performance claims (60 fps on integrated GPU) are measured with the dev FPS overlay,

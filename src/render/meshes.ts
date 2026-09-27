@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import type { Vec } from '../core/vec'
 import { captureRadius } from '../physics/capture'
-import { themePlanetBody } from './theme-prototype'
+import { themePlanetBody } from './theme-prototype' // THEME PROTOTYPE — see fence in buildPlanet
 import type { Planet, WorldSnapshot } from '../world/types'
 
 // Low-poly toon biome palettes (body / accent), indexed by Planet.paletteIndex.
@@ -41,7 +41,9 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
   scene.add(ship)
 
   const buildPlanet = (p: Planet): THREE.Group => {
-    // PROTOTYPE HOOK (dev-only, tree-shaken in prod) — remove with theme-prototype.ts
+    // ─── BEGIN THEME PROTOTYPE HOOK (dev-only, tree-shaken from prod — verified 2026-09-27) ───
+    // Open decision (see scene.ts fence). Removal: fold the winner's planet materials into
+    // the code below, then delete this block + the import above.
     if (import.meta.env.DEV) {
       const themed = themePlanetBody(p)
       if (themed) {
@@ -49,6 +51,7 @@ export function createEntityPools(scene: THREE.Scene): EntityPools {
         return themed
       }
     }
+    // ─── END THEME PROTOTYPE HOOK ───
     const g = new THREE.Group()
     const [body, accent] = PALETTES[p.paletteIndex % PALETTES.length]!
     const mesh = new THREE.Mesh(

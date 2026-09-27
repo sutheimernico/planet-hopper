@@ -106,6 +106,9 @@ is a small standalone iteration.
       changes the plan.
 
 ## Needs Nico (loop cannot do these itself)
+- **Theme decision A–D** (`npm run dev` → `?variant=A|B|C|D`, ~5 min with real eyes;
+  orientation grid `docs/screenshots/theme-variants.jpg` is SwiftShader-rendered). The
+  winner then gets folded in per plan 2026-07-21 Task 10 branch 1.
 - Git remote / public-visibility decision before any first push.
 - Game-feel + visual sign-off on a real GPU/display; fps verification on a real laptop.
 - Name confirmation ("Planet Hopper" is the working title).
