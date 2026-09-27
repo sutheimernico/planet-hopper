@@ -69,9 +69,9 @@ function boot(root: HTMLDivElement): void {
   let run = newRun(world.snapshot())
   let prevShipPos: Vec = run.ship.pos
   let aiming = false
-  // latest raw pointermove aim, consumed (and cleared) at most once per rendered frame —
-  // simulateTrajectory runs 360 fixed steps and must not run on every raw pointer event
-  // (review finding, Task 19 review #5)
+  // latest raw pointermove aim, held until release/cancel and previewed once per rendered
+  // frame — simulateTrajectory runs 360 fixed steps and must not run on every raw pointer
+  // event (review finding, Task 19 review #5)
   let pendingAim: Aim | null = null
 
   const screens = createScreens(root, {
@@ -126,7 +126,7 @@ function boot(root: HTMLDivElement): void {
     onAim: (a) => {
       if (phase !== 'playing') return // captured pointer keeps dragging across a pause
       aiming = true
-      // stored, not computed here — frame() consumes it at most once per rendered frame
+      // stored, not computed here — frame() previews it once per rendered frame
       // (review finding, Task 19 review #5)
       pendingAim = a
     },
@@ -186,10 +186,12 @@ function boot(root: HTMLDivElement): void {
       if (run.mode === 'dead') setPhase('die')
 
       // simulateTrajectory runs 360 fixed steps — recompute the preview at most once per
-      // rendered frame instead of on every raw pointermove (review finding, Task 19 review #5)
-      if (pendingAim) {
+      // rendered frame instead of on every raw pointermove (review finding, Task 19 review #5).
+      // The held aim is NOT consumed: the ship keeps orbiting while the pointer rests, so a
+      // preview computed only on pointermove drifts away from the real launch point
+      // (found in the first headless render, 2026-09-27).
+      if (aiming && pendingAim) {
         const aim = pendingAim
-        pendingAim = null
         const planet = world.snapshot().planets.find((p) => p.id === run.orbit?.planetId)
         if (planet && run.orbit) {
           // preview uses launchVelocity + simulateTrajectory — the live physics, no duplicate
