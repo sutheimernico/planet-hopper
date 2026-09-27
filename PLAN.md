@@ -63,19 +63,41 @@ binding. Each item is its own commit (iron principle: one change per iteration).
 - [x] Ramp monotonicity test (spec §12)
 - [x] Bookkeeping: deferred-polish/needs-nico/needs-nico-live-verify entries below
 
+### v1.1 "Ghost & Shine" (2026-09-27, plan `docs/superpowers/plans/2026-07-21-ghost-and-shine.md`)
+Outcome + deviations are in the plan doc's Outcome section.
+- [x] Task 1: top-K gravity without sort (bit-identical golden test)
+- [x] Task 2: boot() decomposition — session, run driver, RUN_RESETTABLES registry
+- [x] Task 3: event-drain smoke test (pure session instead of jsdom + three mock)
+- [x] Task 4: reachability test (2000/2000 gaps, guard = void gap)
+- [x] Task 5: vendor chunk split (three-core + three, no size warning)
+- [x] Task 6: ghost replay (seeded runs only)
+- [x] Task 7: daily seed, `?seed=` links, share button (done before Task 6)
+- [x] Task 8: milestone toasts
+- [x] Task 9: audio deepening (pad, Doppler flyby, layered death) — mix = Nico's ear
+- [x] Task 10: theme prototype — branch 2 (no decision yet; hooks fenced)
+- [x] Task 11: README + verification table
+- [x] Headless render + play (SwiftShader, Playwright): 4 runtime bugs fixed, screenshots
+      in `docs/screenshots/`
+
 ### Deferred polish (v1.1 candidates)
 Consciously deferred out of v1 so it converges (spec nice-to-haves, from
 `docs/superpowers/plans/2026-07-06-planet-hopper-v1.md` "Deferred polish"); each
 is a small standalone iteration.
 - [ ] Nebula gradient backdrop layers (spec §6) — starfield + fog ship first.
 - [ ] Slight time-dilation on flyby bonus (spec §6 juice).
-- [ ] Ambient synth pad (spec §7) — SFX ship first; pad needs volume balancing on
-      real speakers.
+- [x] Ambient synth pad (spec §7) — shipped in v1.1 Task 9; volume balancing on real
+      speakers is in Needs Nico (audio mix veto).
 - [ ] Adaptive DPR feedback loop (spec §10) — the current DPR cap (≤2) is static; a real
       feedback loop needs measured fps on real hardware to tune against (Nico territory).
 
 ### Needs Nico live verify (accumulates during Phase 2)
 (visual/game-feel checks that need a real display + GPU — appended as tasks complete)
+> 2026-09-27 headless pass (Playwright + SwiftShader, prod build): the mechanical parts of
+> the items below are now verified — 0 console errors, non-blank canvas, start → orbit →
+> drag preview → launch → capture chain (10 hops) → game over → Nochmal, HUD counts, Esc
+> pause, mute button present, AudioContext only after a gesture. What remains for each item
+> is the human part: looks, feel, audibility, real fps. The Task 21 overlay was fixed to
+> read frame intervals (it used to report 1000 / CPU-ms, e.g. "362 fps" at a real ~10 fps).
 - [ ] Task 15: `npm run dev` → confirm dark space, starfield with subtle bloom, no console errors
       (agent smoke-checked only that the module graph serves/builds without error; cannot see a
       real WebGL canvas)
@@ -106,15 +128,29 @@ is a small standalone iteration.
       changes the plan.
 
 ## Needs Nico (loop cannot do these itself)
-- **Theme decision A–D** (`npm run dev` → `?variant=A|B|C|D`, ~5 min with real eyes;
-  orientation grid `docs/screenshots/theme-variants.jpg` is SwiftShader-rendered). The
-  winner then gets folded in per plan 2026-07-21 Task 10 branch 1.
-- Git remote / public-visibility decision before any first push.
-- Game-feel + visual sign-off on a real GPU/display; fps verification on a real laptop.
+Matches the "pending" column of the README verification table.
+- **Theme decision A–D** (`npm run dev` → `http://localhost:5173/?variant=A|B|C|D`, ~5 min
+  with real eyes; orientation grid `docs/screenshots/theme-variants.jpg` is
+  SwiftShader-rendered). The winner then gets folded in per plan 2026-07-21 Task 10
+  branch 1.
+- **Live GPU session** (`npm run dev`): game feel of the full loop; real fps from the
+  bottom-left dev overlay (now frame-interval based — trustworthy); looks of bloom/trail/
+  rings; readability of the ghost (opacity 0.35) and the milestone toasts; mobile/touch
+  viewport check (pause button, drag gesture); WebGL-less fallback message.
+- **Audio mix veto** by ear: `SFX_GAIN`, `PAD_GAIN`, `DEATH_NOISE_GAIN` in
+  `src/audio/mix.ts`.
+- **Balance feel after the flyby fix:** a launch no longer pays a free flyby, so scores
+  are lower than in v1 and the ×-multiplier needs real flybys. Reachability headroom
+  measured: gaps stay 100 % reachable even at 2× spacing — difficulty can go up if runs
+  feel too easy.
+- Trailer GIF/clip for the README (5 s flyby + capture, real screen recording).
 - Name confirmation ("Planet Hopper" is the working title).
+- Git remote / public-visibility decision before any first push (publish checklist), then
+  merge `autopilot/work` → `main` (the push to `main` triggers the Pages deploy).
 - `.github/workflows/deploy.yml` action pins bumped 2026-09-27 to the then-latest majors
   (checkout v7, setup-node v7 with Node 24, upload-pages-artifact v5, deploy-pages v5 —
   the v3/v4 pair was the Node20 generation); release notes show no breaking change for
   this workflow, but it has never run — the first push to `main` on a remote is its test.
 - WebGL-fallback message (`src/main.ts`) should link to the repo (spec §11) once a public
   remote exists — inert until then, same dependency as the git-remote decision above.
+- Portfolio entry once presentable.

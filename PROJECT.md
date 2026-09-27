@@ -51,6 +51,14 @@ No UI framework — DOM overlay only. No runtime network access.
 
 ## Status
 <!-- keep current — the sweep and every fresh agent reads this first -->
+- 2026-09-27: v1.1 "Ghost & Shine" on `autopilot/work`: ghost replay, daily challenge +
+  `?seed=` share links, milestone toasts, deeper synth audio, vendor chunk split, boot()
+  decomposed into a tested session/run-driver/reset-registry. 144 tests green, gate +
+  build clean (149.87 kB gzip JS in 3 chunks). First real render: headless Chromium +
+  SwiftShader with real mouse input — 0 console errors, 4 runtime bugs found and fixed
+  (stale preview, free flyby per launch, mid-round sim freeze, dev fps overlay measuring
+  CPU instead of frame time). Needs Nico: theme A–D, live GPU/feel/fps/mobile session,
+  audio mix, name, remote + deploy (PLAN.md "Needs Nico").
 - 2026-07-11: v1 code-complete on `autopilot/work` (Tasks 1–23 done): full arcade
   loop wired end to end (aim → launch → capture/crash → score → restart), 79 tests
   green, gate clean (typecheck + tests + lint), production build clean (145 kB

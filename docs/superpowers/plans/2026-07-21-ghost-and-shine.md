@@ -1,6 +1,6 @@
 # Plan: Ghost & Shine — planet-hopper v1.1
 
-**Date:** 2026-07-21 · **Status:** awaiting go · **Executor:** any capable agent (self-contained — no session context required)
+**Date:** 2026-07-21 · **Status:** done 2026-09-27 (go given; see Outcome) · **Executor:** any capable agent (self-contained — no session context required)
 **Branch state:** v1 code-complete on `autopilot/work` (24 tasks, 80 tests green, typecheck+lint clean, 145 kB gzip). Theme prototype is **committed** (`src/render/theme-prototype.ts`, dev-only, tree-shaken from prod — verified) with two "PROTOTYPE HOOK" touch points in `meshes.ts`/`scene.ts`.
 
 ## Context (verified 2026-07-21 by code review)
@@ -115,3 +115,77 @@ Honest verification table (feature × proven-by: unit test / headless build / **
 - Live GPU session: game feel, real FPS, mobile viewport check, audio mix veto (three constants).
 - Trailer GIF/clip for README (5s flyby+capture screen recording — no agent can do this honestly).
 - Merge to `main`, final name decision, remote/deploy (GH Pages fits the fully-static constraint), portfolio entry.
+
+---
+
+## Outcome (2026-09-27)
+
+**Executed:** Tasks 1–11 on `autopilot/work`, 18 commits `d123d7f`..the bookkeeping commit, one
+logical change each, gate (`test:run` + `typecheck` + `lint`, unpiped) green before every
+commit, `npm run build` clean at the end. Tests 80 → 144 (25 files).
+
+### What was built
+| Task | Result |
+|---|---|
+| 1 Top-K gravity | single-pass insertion into reused typed-array scratch; golden test vs. the ported copy+sort (2000 randomized sets incl. ties + a 3000-step generated-world flight) bit-identical; mutation (`<` → `<=`) caught. Node micro-bench: 360 calls over 15 bodies 0.184 → 0.032 ms (5.8×). |
+| 2 boot() decomposition | `core/run-driver` (seeded world + RunState + ticks; generation/prune moved per-tick, O(1) idle — makes a run depend on tick count only), `core/session` (phase, held aim, accumulator, one event queue drained once per frame; one `clearGesture()`), `core/run-lifecycle` (`RUN_RESETTABLES` registry: Record type forces a handler, unlisted handlers throw). main.ts 249 → 254 lines, but now thin glue that also wires daily/ghost/toasts; the logic lives in tested core modules. |
+| 3 Event-drain test | `tests/session-integration.test.ts`: aim → release → drain once → pause (0 ticks) → resume → capture; preview follows the orbiting ship; ship flies the previewed samples bit-for-bit; death → gameover. Mutation (drop the launch enqueue) fails it. |
+| 4 Reachability | `tests/reachability.test.ts` + `tests/helpers/reach.ts`: 50 seeds × 40 gaps = 2000/2000 reachable in ~5 s (orbit angle × 32 directions × 5 powers, live pruned window, void rule applied). |
+| 5 Chunking | `codeSplitting.groups`: three-core + three + app, no warning, limit untouched. |
+| 6 Ghost | `core/replay` (versioned, validated, cap 50 launches), second RunDriver in lockstep, `render/ghost` translucent ship, stored per seed, "Geist: an/aus" in pause (persisted). Determinism test on hashed per-tick positions, also after JSON round-trip; 1e-12 input change diverges. |
+| 7 Daily + share | `core/daily` (validated string seeds, FNV-1a, UTC date, German share text), start screen "Tages-Challenge", `?seed=` links, "Teilen" with Clipboard API + pre-selected fallback, "Menü" (new gameover → menu transition), per-seed bests (4 slots) apart from the endless record; static test: no network API in `src/`. |
+| 8 Milestones | `core/milestones` (fixed set, once per run, ≤ 1 per check) + `ui/toast` (fixed, pointer-events none, queued 2 s each), reset via the registry. |
+| 9 Audio | `audio/mix.ts` constants + Doppler math, pad (2 detuned triangles + LFO, started from the Start click), Doppler flyby, noise + sine death; one master gain so mute kills everything (fake-AudioContext tests). |
+| 10 Theme | branch 2 — no decision from Nico: prototype kept (re-verified absent from prod), both hooks BEGIN/END-fenced with removal steps, README + PLAN Needs-Nico, orientation grid `docs/screenshots/theme-variants.jpg`. |
+| 11 README | verification table (unit / headless / pending GPU), controls, modes, measured sizes, audio constants, deploy notes. |
+
+### Beyond the plan (mission items 2–4)
+- **First real render + play:** Playwright 1.63 (the globally installed `@playwright/cli`
+  bundle — no new project dependency) driving headless Chromium with SwiftShader against
+  `vite preview`. Menu/aim/flight screenshots in `docs/screenshots/` (33–41 kB JPEG).
+- **Runtime bugs found and fixed:** (1) the preview was only recomputed on `pointermove`
+  — holding still let it drift up to half an orbit from the real launch point
+  (`08d735e`); (2) leaving the launch planet's flyby band counted as a flyby — every
+  launch paid +400 × mult and stacked the multiplier (`225889b`); (3) the dev fps overlay
+  computed 1000 / CPU-ms ("362 fps" at a real ~10 fps) and would have faked the 60 fps
+  acceptance check (`9000f2f`); (4) mid-round, `ghost?.advance(session.advance(dt))` froze
+  the sim whenever there was no ghost (optional chaining skips argument evaluation) —
+  caught headless before it was committed.
+- **Profiling:** CDP CPU profile (unminified scratch build) during orbit/aim/flight: main
+  thread ~97 % idle, game JS ≈ 0.1–0.3 ms/frame — no JS hot spot. Inlining `dist()` to
+  avoid a temporary Vec measured 0.181 → 0.171–0.177 ms per 360-step preview (noise; V8
+  already elides it) → not committed.
+- **Deploy prep:** `BASE_PATH` override in `vite.config.ts` (default stays the relative
+  `./`, which already works on Pages project sites); workflow action pins bumped to the
+  Node 24 majors (unverified until a real run). No remote, no push.
+
+### Numbers
+- Bundle gzip: before 145.40 kB JS (1 chunk, warning) + 0.95 kB CSS → after 11.43 + 50.92
+  + 87.52 = 149.87 kB JS (3 chunks, no warning) + 1.12 kB CSS. Split overhead ≈ 1.2 kB;
+  new features ≈ 2.6 kB app code. Acceptance "total gzip not larger" is therefore **not
+  met** by ~1.2 kB — the price of every chunk < 500 kB without raising the limit.
+- Frame time **software-rendered** (SwiftShader, 1280×720, 3 runs): 6–10 fps. Not a GPU
+  statement.
+
+### Deviations (with reason)
+- **Task order 7 before 6:** a ghost only makes sense on a replayed seed; seeds had to exist first.
+- **Ghost only for seeded runs** (daily / `?seed=`), not the endless highscore: a random
+  endless world is never replayed, so its ghost would fly through planets that don't exist.
+- **Task 3 without jsdom/three mock:** the drain logic moved into the pure session in Task 2,
+  so the test drives the real code path with no DOM and no new dev dependency.
+- **Task 4 guard:** doubling the spacing does NOT break reachability (measured 0/200 gaps
+  unreachable at 2×, 20/200 at 3×), so the permanent guard is a 450 wu void gap.
+- **Task 5:** total gzip +1.2 kB (see Numbers).
+- **Task 8:** the milestone check runs once per rendered frame after the ticks, not per
+  tick — same "≤ 1 toast per check" guarantee; the toast queue shows each for 2 s.
+- **Share text for custom seeds** reads `Seed „abc“` instead of `Tages-Challenge <date>`.
+
+### Audio mix constants (Nico's ear)
+`src/audio/mix.ts`: `SFX_GAIN = 1` (all effects), `PAD_GAIN = 0.012` (≈ −24.4 dB below the
+loudest effect), `DEATH_NOISE_GAIN = 0.12`. Linear gains — halve ≈ −6 dB, double ≈ +6 dB.
+
+### Open points
+All in PLAN.md "Needs Nico": theme A–D; live GPU session (feel, real fps via the fixed
+overlay, looks, ghost/toast readability, mobile/touch, WebGL fallback); audio mix; balance
+feel after the flyby fix; trailer clip; name; remote + merge to `main` (= first Pages
+deploy, which also tests the bumped action pins); portfolio entry.
