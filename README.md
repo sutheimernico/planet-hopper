@@ -14,7 +14,7 @@ GPUs — **not yet verified on real hardware** (see verification table).
 WebGL), 1280×720, 2026-09-27. Real captures, but not a statement about GPU looks or speed.</sub>
 
 ## Status
-v1.1 "ghost & shine" on `autopilot/work` (2026-09-27): full arcade loop, ghost replay,
+v1.1 "ghost & shine" (2026-09-27): full arcade loop, ghost replay,
 daily challenge + share links, milestone toasts, deeper synth audio. 144 tests green,
 typecheck + lint clean, production build without warnings. For the first time the
 game was actually **rendered and played headless** (SwiftShader + real mouse input);
