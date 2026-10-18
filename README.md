@@ -70,8 +70,8 @@ frames). Still pending: a human on a real GPU — see "Needs Nico".
 | Audio | mute silences everything incl. pad; pad ≤ −24 dB vs. effects; Doppler math | no AudioContext before the first click, `running` after Start, 0 errors (headless is muted — nothing heard) | **pending: mix by ear** |
 | Rendering (starfield, bloom, trail, rings) | — | non-blank canvas, 0 console errors, screenshots above | **pending: looks + fps** |
 | Dev fps overlay | fps from frame intervals, not CPU time | agrees with an independent rAF measurement (89.4 vs 88.9 ms/frame) | **pending: the real number** |
-| Touch / mobile viewport | — | — | **pending** |
-| WebGL-less fallback message | — | — (SwiftShader provides WebGL) | **pending** |
+| Touch / mobile viewport | pointer events, second finger ignored | 390×844 touch emulation (CDP touch events, DPR 1 and 2): menu, drag-to-launch, score rises, no horizontal overflow, 0 errors | **pending: ergonomics on a real phone** |
+| WebGL-less fallback message | — | Chromium with GL disabled shows "Planet Hopper braucht WebGL.", 0 errors | — |
 | Theme A–D | — | orientation grid | **pending: decision** |
 
 ¹ The bot ran on a scratch build of the same commit with one extra line exposing the
@@ -102,12 +102,21 @@ npm run build      # production build → dist/
 npm run preview    # serve dist/ → http://localhost:4173/
 ```
 
-## Deploy (prepared, not published)
-`.github/workflows/deploy.yml` builds and deploys to GitHub Pages on every push to
-`main` (gate first). The relative base (`./`) works for project pages without knowing
-the repo name; `BASE_PATH=/name/ npm run build` forces an absolute base if a host needs
-it. Action pins were bumped to the Node 24 majors on 2026-09-27; the workflow has never
-run — the first push to a real remote is its test. No remote exists yet (Nico's call).
+## Deploy (workflow ready, Pages not enabled yet)
+`.github/workflows/deploy.yml` runs the gate, builds and deploys to GitHub Pages on every push
+to `main`. The relative base (`./`) works for project pages without knowing the repo name;
+`BASE_PATH=/name/ npm run build` forces an absolute base if a host needs it.
+
+State on 2026-10-18: the workflow ran once (2026-10-05); install, gate and build passed, only
+the final `deploy-pages` step failed with 404 because Pages is not enabled for the repo. No
+workflow change is needed. To go live (one-time, repo owner):
+1. GitHub → repo *Settings → Pages → Build and deployment → Source: **GitHub Actions***.
+2. Re-run the failed run (`gh run rerun --failed`) or push to `main`.
+3. The game is then at `https://sutheimernico.github.io/planet-hopper/`; add that URL as the
+   repo homepage and as the live link in the portfolio case study.
+
+The hosted build has no theme switcher (`?variant=` is dev-only); production shows the
+baseline look (variant A).
 
 ## Audio mix
 All sound is synthesized at runtime (WebAudio) — no audio files. The final mix is by ear:
